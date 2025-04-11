@@ -193,7 +193,8 @@
                 "tiktoken",
                 "regex",
                 "tiktoken_ext",
-                "toml"
+                "toml",
+                "typing_inspection"
             ],
             "package_files": [
                 "typing_extensions.py"
