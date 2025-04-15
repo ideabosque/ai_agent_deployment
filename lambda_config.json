@@ -194,7 +194,8 @@
                 "regex",
                 "tiktoken_ext",
                 "toml",
-                "typing_inspection"
+                "typing_inspection",
+                "shopify_connector"
             ],
             "package_files": [
                 "typing_extensions.py"
