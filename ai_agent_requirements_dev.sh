@@ -1,6 +1,8 @@
 echo "y" | pip uninstall openai && pip install openai
 echo "y" | pip uninstall toml && pip install toml
 echo "y" | pip uninstall tiktoken && pip install tiktoken
+echo "y" | pip uninstall ShopifyAPI && pip install ShopifyAPI
+echo "y" | pip uninstall shopify_connector && pip install git+https://github.com/ideabosque/shopify_connector.git@main#egg=shopify_connector
 echo "y" | pip uninstall silvaengine_resource && pip install git+https://github.com/ideabosque/silvaengine_resouces.git@main#egg=silvaengine_resource
 echo "y" | pip uninstall ai_agent_core_engine && pip install git+https://github.com/ideabosque/ai_agent_core_engine.git@main#egg=ai_agent_core_engine
 echo "y" | pip uninstall ai_agent_funct_base && pip install git+https://github.com/ideabosque/ai_agent_funct_base.git@main#egg=ai_agent_funct_base
