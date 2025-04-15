@@ -167,8 +167,6 @@
         },
         "silvaengine_microcore_ai_agent_layer": {
             "packages": [
-                "shopify",
-                "shopify_connector",
                 "ai_agent_core_engine",
                 "ai_agent_funct_base",
                 "ai_marketing_engine",
@@ -196,7 +194,10 @@
                 "regex",
                 "tiktoken_ext",
                 "toml",
-                "typing_inspection"
+                "typing_inspection",
+                "shopify_connector",
+                "shopify",
+                "pyactiveresource"
             ],
             "package_files": [
                 "typing_extensions.py"
