@@ -10,8 +10,10 @@ echo "y" | pip uninstall ai_marketing_engine && pip install git+https://github.c
 echo "y" | pip uninstall ai_coordination_engine && pip install git+https://github.com/ideabosque/ai_coordination_engine.git@main#egg=ai_coordination_engine
 echo "y" | pip uninstall ai_agent_handler && pip install git+https://github.com/ideabosque/ai_agent_handler.git@main#egg=ai_agent_handler
 echo "y" | pip uninstall openai_agent_handler && pip install git+https://github.com/ideabosque/openai_agent_handler.git@main#egg=openai_agent_handler
+echo "y" | pip uninstall gemini_agent_handler && pip install git+https://github.com/ideabosque/gemini_agent_handler.git@main#egg=gemini_agent_handler
+echo "y" | pip uninstall anthropic_agent_handler && pip install git+https://github.com/ideabosque/anthropic_agent_handler.git@main#egg=anthropic_agent_handler
 
 ### Private modules.
 echo "y" | pip uninstall ai_knowledge_engine && pip install git+ssh://git@github.com/ideabosque/ai_knowledge_engine.git@main#egg=ai_knowledge_engine
 
-python3.11 cloudformation_stack.py ideabosque.env silvaengine-microcore-ai-agent
+python3.11 cloudformation_stack.py .prod.env silvaengine-microcore-ai-agent
