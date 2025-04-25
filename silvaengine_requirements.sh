@@ -7,4 +7,4 @@ echo "y" | pip uninstall silvaengine_dynamodb_base && pip install git+https://gi
 echo "y" | pip uninstall event_recorder && pip install git+https://github.com/ideabosque/event_recorder.git@main#egg=event_recorder
 echo "y" | pip uninstall mutex_engine && pip install git+https://github.com/ideabosque/mutex_engine.git@main#egg=mutex_engine
 
-python3.11 cloudformation_stack.py ideabosque.env silvaengine
+python3.11 cloudformation_stack.py .prod.env silvaengine
