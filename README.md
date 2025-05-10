@@ -1,12 +1,12 @@
-# OpenAI Assistant Add-on Management Deployment
+# AI Agent Serverless Franework Deployment
 
 ## Introduction
 
-The `openai_deployment` repository is designed to facilitate the deployment of OpenAI services integrated with the SilvaEngine ecosystem. This deployment allows for efficient setup and management of OpenAI functionalities, leveraging SilvaEngine's cloud infrastructure and AWS services.
+The `ai_agent_deployment` repository streamlines the deployment of AI Agent Core services within the SilvaEngine ecosystem, enabling efficient setup and management of AI Agent capabilities by leveraging SilvaEngine's cloud-native architecture and AWS services.
 
 ## Modules
-1. [**OpenAI Assistent Engine**](https://github.com/ideabosque/openai_assistant_engine): The module leverages the OpenAI Assistant API to perform diverse tasks while meticulously recording usage and conversation data for analysis and continuous improvement. It manages and integrates with OpenAI Assistant’s [function calling](https://platform.openai.com/docs/assistants/tools/function-calling/quickstart), enabling efficient interaction with external systems and data sources. Designed for seamless installation with the SilvaEngine AWS Serverless framework, the module functions as an OpenAI Assistant API proxy, ensuring robust and efficient operation across various use cases.
-2. [**OpenAI Funct Base**](https://github.com/ideabosque/openai_funct_base): A foundational framework for developing and implementing function-calling modules, enabling seamless interaction and integration with OpenAI’s advanced capabilities.
+1. [**AI Core Engine Engine**](https://github.com/ideabosque/ai_agent_core_engine): Effortlessly run and scale intelligent agents across multiple LLMs without the need to manage state or sessions. Powered by the SilvaEngine serverless framework, the platform offers a unified, AI-native control plane that integrates rolling context memory, modular function calling, and real-time conversation monitoring for seamless orchestration and performance.
+2. [**AI Agent Funct Base**](https://github.com/ideabosque/ai_agent_funct_base): A foundational framework for developing and implementing function-calling modules, enabling seamless interaction and integration with OpenAI’s advanced capabilities.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ Before proceeding with the installation, ensure you have the following:
 1. Create a main project directory named `silvaengine`.
 2. Within this folder, clone the following repositories:
    - [silvaengine\_aws](https://github.com/ideabosque/silvaengine_aws)
-   - [openai\_deployment](https://github.com/ideabosque/openai_deployment)
+   - [ai\_agent_\_deployment](https://github.com/ideabosque/ai_agent_deployment)
 
 ### Step 2: Download and Set Up Docker
 
@@ -65,7 +65,7 @@ Before proceeding with the installation, ensure you have the following:
 ### Step 3: Setup and Deployment
 
 1. **Create an S3 Bucket**: Ensure versioning is enabled (e.g., `xyz-silvaengine-aws`).
-2. **Configure the ********`.env`******** File**: Place this file inside the `openai_deployment` folder with the following settings:
+2. **Configure the ********`.env`******** File**: Place this file inside the `ai_agent_deployment` folder with the following settings:
    ```bash
    #### Stack Deployment Settings
    root_path=../silvaengine_aws # Root path of the stack
@@ -125,13 +125,13 @@ Before proceeding with the installation, ensure you have the following:
 3. Navigate to the deployment directory and execute the CloudFormation stack:
 
    ```bash
-   cd ./openai_deployment
+   cd ./ai_agent_deployment
    python cloudformation_stack.py .env silvaengine
    ```
 
 ### Step 5: Deploy OpenAI Assistant Add-On Management Framework
 
-1. Add entries into the `se-endpoints` (DynamoDB Table) collection, using the `endpoint_id` such as `openai` from the `lambda_config.json` file located in the `openai_deployment` directory. The format for each entry should be as follows:
+1. Add entries into the `se-endpoints` (DynamoDB Table) collection, using the `endpoint_id` such as `openai` from the `lambda_config.json` file located in the `ai_agent_deployment` directory. The format for each entry should be as follows:
 
    ```json
    {
@@ -175,10 +175,10 @@ Before proceeding with the installation, ensure you have the following:
    source /var/python3.11/silvaengine/env/bin/activate
    ```
 
-5. Navigate to the `openai_deployment` directory and execute the CloudFormation stack setup script:
+5. Navigate to the `ai_agent_deployment` directory and execute the CloudFormation stack setup script:
 
    ```bash
-   cd ./openai_deployment
+   cd ./ai_agent_deployment
    sh openai_requirements.sh
    ```
 
@@ -198,7 +198,7 @@ After deploying SilvaEngine Base, you can verify the deployment by:
 
 ## Conclusion
 
-The `openai_deployment` repository is a crucial component of the SilvaEngine project, enabling easy integration of OpenAI services into cloud infrastructure. Ensure all steps are followed carefully for a successful deployment.
+The `ai_agent_deployment` repository is a crucial component of the SilvaEngine project, enabling easy integration of OpenAI services into cloud infrastructure. Ensure all steps are followed carefully for a successful deployment.
 
 For further assistance, refer to the SilvaEngine documentation or reach out to the development team.
 
