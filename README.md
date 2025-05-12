@@ -65,7 +65,7 @@ Before proceeding with the installation, ensure you have the following:
 ### Step 3: Setup and Deployment
 
 1. **Create an S3 Bucket**: Ensure versioning is enabled (e.g., `xyz-silvaengine-aws`).
-2. **Configure the ********`.env`******** File**: Place this file inside the `ai_agent_deployment` folder with the following settings:
+2. **Configure the ********`.env`******** and ********`.prod.env`********  File**: Place this file inside the `ai_agent_deployment` folder with the following settings:
    ```bash
    #### Stack Deployment Settings
    root_path=../silvaengine_aws # Root path of the stack
@@ -122,14 +122,15 @@ Before proceeding with the installation, ensure you have the following:
    source /var/python3.11/silvaengine/env/bin/activate
    ```
 
-3. Navigate to the deployment directory and execute the CloudFormation stack:
+3. Navigate to the deployment directory and deploy the SilvaEngine stack:
 
    ```bash
    cd ./ai_agent_deployment
-   python cloudformation_stack.py .env silvaengine
+   sh silvaengine_requirements_dev.sh           # For the development (SilvaEngine).
+   sh silvaengine_requirements.sh               # For the production (SilvaEngine).
    ```
 
-### Step 5: Deploy OpenAI Assistant Add-On Management Framework
+### Step 5: Deploy AI Agent Add-On Management Framework
 
 1. Add entries into the `se-endpoints` (DynamoDB Table) collection, using the `endpoint_id` such as `openai` from the `lambda_config.json` file located in the `ai_agent_deployment` directory. The format for each entry should be as follows:
 
@@ -179,7 +180,10 @@ Before proceeding with the installation, ensure you have the following:
 
    ```bash
    cd ./ai_agent_deployment
-   sh openai_requirements.sh
+   sh ai_agent_requirements_dev.sh           # For the development (AI Agent Core Engine).
+   sh ai_agent_requirements.sh               # For the production (AI Agent Core Engine).
+   sh ai_knowledge_requirements_dev.sh       # For the development (AI Knowledge Engine).
+   sh ai_knowledge_requirements.sh           # For the production (AI Knowledge Engine).
    ```
 
 ## Deployment Verification
