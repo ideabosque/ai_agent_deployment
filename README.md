@@ -5,8 +5,8 @@
 The `ai_agent_deployment` repository streamlines the deployment of AI Agent Core services within the SilvaEngine ecosystem, enabling efficient setup and management of AI Agent capabilities by leveraging SilvaEngine's cloud-native architecture and AWS services.
 
 ## Modules
-1. [**AI Core Engine Engine**](https://github.com/ideabosque/ai_agent_core_engine): Effortlessly run and scale intelligent agents across multiple LLMs without the need to manage state or sessions. Powered by the SilvaEngine serverless framework, the platform offers a unified, AI-native control plane that integrates rolling context memory, modular function calling, and real-time conversation monitoring for seamless orchestration and performance.
-2. [**AI Agent Funct Base**](https://github.com/ideabosque/ai_agent_funct_base): A foundational framework for developing and implementing function-calling modules, enabling seamless interaction and integration with OpenAI’s advanced capabilities.
+1. [**AI Core Engine Engine**](https://github.com/ideabosque/ai_agent_core_engine): Effortlessly run and scale intelligent agents across multiple LLMs with the capability to manage state or sessions. Powered by the SilvaEngine serverless framework, the platform offers a unified, AI-native control plane that integrates rolling context memory, modular function calling, and real-time conversation monitoring for seamless orchestration and performance.
+2. [**AI Agent Funct Base**](https://github.com/ideabosque/ai_agent_funct_base): A foundational framework for developing and implementing function-calling modules, enabling seamless interaction and integration with each LLM’s advanced capabilities.
 
 ## Prerequisites
 
