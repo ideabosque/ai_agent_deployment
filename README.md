@@ -13,7 +13,6 @@ The `ai_agent_deployment` repository streamlines the deployment of AI Agent Core
 Before proceeding with the installation, ensure you have the following:
 
 - **Docker**: Install Docker and Docker Compose to run containerized services.
-- **Python 3.11**: The deployment uses Python 3.11, so ensure it is installed.
 - **AWS CLI**: Set up the AWS CLI with access credentials that have permissions to create S3 buckets, IAM roles, and Lambda functions.
 - **Git**: Required to clone the necessary repositories.
 - **AWS Account**: You'll need an AWS account to create resources such as S3 buckets, IAM roles, and Lambda functions.
@@ -167,7 +166,7 @@ Before proceeding with the installation, ensure you have the following:
 3. To access the container, execute the following command:
 
    ```bash
-   $ docker exec -it container-aws-suites-311 /bin/bash
+   $ docker exec -it container-aws-suites /bin/bash
    ```
 
 4. Activate the Python virtual environment by running:
@@ -196,9 +195,7 @@ After deploying SilvaEngine Base, you can verify the deployment by:
 
 ## Troubleshooting
 
-- **Docker Permission Issues**: If you encounter permission issues with Docker, ensure your user has been added to the `docker` group.
 - **AWS Credentials**: Double-check the AWS credentials (`aws_access_key_id` and `aws_secret_access_key`) if you face authentication errors during deployment.
-- **Python Version Conflicts**: Make sure Python 3.11 is installed and is the default version used within the Docker container.
 
 ## Conclusion
 
