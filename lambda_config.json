@@ -98,7 +98,6 @@
                 "graphql_relay",
                 "jsonpickle",
                 "pendulum",
-                "sentry_sdk",
                 "certifi",
                 "yaml",
                 "rx",
