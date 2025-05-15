@@ -180,7 +180,8 @@
                 "thinc",
                 "numpy",
                 "spacy",
-                "bs4"
+                "bs4",
+                "catalogue"
             ],
             "package_files": [],
             "files": {}
