@@ -174,13 +174,13 @@
         },
         "silvaengine_microcore_ai_knowledge_layer": {
             "packages": [
+                "shopify_connector",
                 "ai_knowledge_engine",
                 "humps",
-                "spacy",
                 "thinc",
                 "numpy",
-                "numpy-2.2.4.dist-info",
-                "numpy.libs"
+                "spacy",
+                "bs4"
             ],
             "package_files": [],
             "files": {}
@@ -191,8 +191,7 @@
                 "slack_bolt",
                 "slack_sdk"
             ],
-            "package_files": [
-            ],
+            "package_files": [],
             "files": {}
         }
     }
