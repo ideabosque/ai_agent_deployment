@@ -65,7 +65,7 @@ Before proceeding with the installation, ensure you have the following:
 ### Step 3: Setup and Deployment
 
 1. **Create an S3 Bucket**: Ensure versioning is enabled (e.g., `xyz-silvaengine-aws`).
-2. **Configure the ********`.env`******** and ********`.prod.env`********  File**: Place this file inside the `ai_agent_deployment` folder with the following settings:
+2. **Configure the ********`.env`******** File**: Place this file inside the `ai_agent_deployment` folder with the following settings:
    ```bash
    #### Stack Deployment Settings
    root_path=../silvaengine_aws # Root path of the stack
@@ -126,8 +126,7 @@ Before proceeding with the installation, ensure you have the following:
 
    ```bash
    cd ./ai_agent_deployment
-   sh silvaengine_requirements_dev.sh           # For the development (SilvaEngine).
-   sh silvaengine_requirements.sh               # For the production (SilvaEngine).
+   ./silvaengine_requirements.sh .env
    ```
 
 ### Step 5: Deploy AI Agent Add-On Management Framework
@@ -180,10 +179,9 @@ Before proceeding with the installation, ensure you have the following:
 
    ```bash
    cd ./ai_agent_deployment
-   sh ai_agent_requirements_dev.sh           # For the development (AI Agent Core Engine).
-   sh ai_agent_requirements.sh               # For the production (AI Agent Core Engine).
-   sh ai_knowledge_requirements_dev.sh       # For the development (AI Knowledge Engine).
-   sh ai_knowledge_requirements.sh           # For the production (AI Knowledge Engine).
+   ./ai_agent_requirements.sh .env
+   ./ai_knowledge_requirements.sh .env
+   ./slack_requirements.sh .env
    ```
 
 ## Deployment Verification
