@@ -177,9 +177,6 @@
                 "shopify_connector",
                 "ai_knowledge_engine",
                 "humps",
-                "thinc",
-                "numpy",
-                "spacy",
                 "bs4",
                 "catalogue"
             ],
