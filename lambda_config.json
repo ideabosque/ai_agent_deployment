@@ -178,6 +178,7 @@
             "packages": [
                 "shopify_connector",
                 "shopify",
+                "pyactiveresource",
                 "ai_knowledge_engine",
                 "openai",
                 "anyio",
