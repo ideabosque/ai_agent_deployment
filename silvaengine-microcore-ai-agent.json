@@ -40,6 +40,7 @@
                         {
                            "Action": [
                               "sqs:*",
+                              "s3:*",
                               "dynamodb:*",
                               "cloudwatch:*",
                               "iam:ListRoles",
