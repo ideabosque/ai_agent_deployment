@@ -177,6 +177,7 @@
         "silvaengine_microcore_ai_knowledge_layer": {
             "packages": [
                 "shopify_connector",
+                "shopify",
                 "ai_knowledge_engine",
                 "openai",
                 "anyio",
