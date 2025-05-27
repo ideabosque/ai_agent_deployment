@@ -183,7 +183,6 @@
                 "neo4j",
                 "redis_stack_connector",
                 "redis",
-                "redis-6.1.0.dist-info",
                 "ai_knowledge_engine",
                 "openai",
                 "anyio",

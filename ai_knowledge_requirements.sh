@@ -10,6 +10,8 @@ ENV_FILE="$1"
 BRANCH="${2:-main}"
 
 echo "y" | pip uninstall ShopifyAPI && pip install ShopifyAPI
+echo "y" | pip uninstall redis && pip install redis
+echo "y" | pip uninstall neo4j && pip install neo4j 
 echo "y" | pip uninstall redis_stack_connector && pip install git+https://github.com/ideabosque/redis_stack_connector.git@main#egg=redis_stack_connector
 echo "y" | pip uninstall neo4j_graph_connector && pip install git+https://github.com/ideabosque/neo4j_graph_connector.git@main#egg=neo4j_graph_connector
 ### Private modules.
