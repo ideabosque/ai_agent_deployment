@@ -118,7 +118,9 @@
                 "ecdsa",
                 "dotenv"
             ],
-            "package_files": ["requests_file.py"],
+            "package_files": [
+                "requests_file.py"
+            ],
             "files": {}
         },
         "silvaengine_microcore_ai_agent_layer": {
@@ -176,11 +178,17 @@
             "packages": [
                 "shopify_connector",
                 "ai_knowledge_engine",
+                "openai",
+                "pydantic",
+                "pydantic_core",
+                "annotated_types",
                 "humps",
                 "bs4",
                 "catalogue"
             ],
-            "package_files": [],
+            "package_files": [
+                "typing_extensions.py"
+            ],
             "files": {}
         },
         "silvaengine_microcore_slack_layer": {
