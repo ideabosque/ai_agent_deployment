@@ -1,4 +1,4 @@
-# AI Agent Serverless Franework Deployment
+# AI Agent Serverless Framework Deployment
 
 ## Introduction
 
