@@ -83,6 +83,28 @@
                     ]
                 }
             }
+        },
+        "silvaengine_microcore_mcp": {
+            "endpoint_id": "openai",
+            "area": "core",
+            "base": "/beehive/microcore",
+            "packages": [],
+            "package_files": [],
+            "files": {},
+            "hooks": {
+                "packages": [
+                    "ai_mcp_daemon_engine"
+                ],
+                "events": {
+                    "deploy": [
+                        {
+                            "package_name": "silvaengine_resource",
+                            "class_name": "Resource",
+                            "function_name": "add_resource"
+                        }
+                    ]
+                }
+            }
         }
     },
     "layers": {
@@ -208,9 +230,37 @@
             "packages": [
                 "slack_bot_engine",
                 "slack_bolt",
-                "slack_sdk"
+                "slack_sdk",
+                "websocket",
+                "websocket_client-1.8.0.dist-info",
+                "websockets",
+                "websockets-15.0.1.dist-info"
             ],
             "package_files": [],
+            "files": {}
+        },
+        "silvaengine_microcore_mcp_layer": {
+            "packages": [
+                "ai_mcp_daemon_engine",
+                "idna",
+                "httpx",
+                "annotated_types",
+                "sniffio",
+                "anyio",
+                "typing_inspection",
+                "pydantic",
+                "pydantic_core",
+                "mcp",
+                "mcp-1.9.4.dist-info",
+                "passlib",
+                "httpx_sse",
+                "pydantic_settings",
+                "starlette",
+                "sse_starlette"
+            ],
+            "package_files": [
+                "typing_extensions.py"
+            ],
             "files": {}
         }
     }
