@@ -189,7 +189,15 @@
                 "typing_inspection",
                 "shopify_connector",
                 "shopify",
-                "pyactiveresource"
+                "pyactiveresource",
+                "mcp_http_client",
+                "aiohttp",
+                "multidict",
+                "yarl",
+                "propcache",
+                "aiohappyeyeballs",
+                "aiosignal",
+                "frozenlist"
             ],
             "package_files": [
                 "typing_extensions.py"
