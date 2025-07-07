@@ -197,7 +197,8 @@
                 "propcache",
                 "aiohappyeyeballs",
                 "aiosignal",
-                "frozenlist"
+                "frozenlist",
+                "attr"
             ],
             "package_files": [
                 "typing_extensions.py"
