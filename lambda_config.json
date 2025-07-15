@@ -28,7 +28,8 @@
                 "packages": [
                     "ai_agent_core_engine",
                     "ai_marketing_engine",
-                    "ai_coordination_engine"
+                    "ai_coordination_engine",
+                    "app_core_engine"
                 ],
                 "events": {
                     "deploy": [
@@ -155,6 +156,7 @@
                 "openai_agent_handler",
                 "gemini_agent_handler",
                 "anthropic_agent_handler",
+                "app_core_engine",
                 "openai",
                 "google",
                 "google_auth-2.39.0.dist-info",
