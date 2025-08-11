@@ -24,5 +24,6 @@ echo "y" | pip uninstall gemini_agent_handler && pip install git+https://github.
 echo "y" | pip uninstall anthropic_agent_handler && pip install git+https://github.com/ideabosque/anthropic_agent_handler.git@$BRANCH#egg=anthropic_agent_handler
 echo "y" | pip uninstall mcp_http_client && pip install git+https://github.com/ideabosque/mcp_http_client.git@main#egg=mcp_http_client
 echo "y" | pip uninstall app_core_engine && pip install git+https://github.com/ideabosque/app_core_engine.git@main#egg=app_core_engine
+echo "y" | pip uninstall shopify_app_engine && pip install git+https://github.com/ideabosque/shopify_app_engine.git@main#egg=shopify_app_engine
 
 python3.11 cloudformation_stack.py "$ENV_FILE" silvaengine-microcore-ai-agent
