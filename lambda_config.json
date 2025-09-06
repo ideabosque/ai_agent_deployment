@@ -262,7 +262,7 @@
                 "pydantic",
                 "pydantic_core",
                 "mcp",
-                "mcp-1.9.4.dist-info",
+                "mcp-1.13.1.dist-info",
                 "passlib",
                 "httpx_sse",
                 "pydantic_settings",
@@ -271,7 +271,13 @@
                 "humps",
                 "shopify_connector",
                 "shopify",
-                "pyactiveresource"
+                "pyactiveresource",
+                "jsonschema",
+                "jsonschema_specifications",
+                "attr",
+                "attrs",
+                "referencing",
+                "rpds"
             ],
             "package_files": [
                 "typing_extensions.py"
