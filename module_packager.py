@@ -26,6 +26,7 @@ import logging
 import os
 import subprocess
 import sys
+import threading
 import time
 import zipfile
 from collections import defaultdict
@@ -136,6 +137,22 @@ class ModulePackager:
         return module_config.get("include_extras", [])
 
 
+    def _show_progress_indicator(self, stop_event: threading.Event, file_size_mb: float):
+        """Show a progress indicator while upload is happening."""
+        # Wait a moment for the initial log message to complete
+        time.sleep(0.5)
+
+        spinner_chars = "|/-\\"
+        spinner_idx = 0
+        start_time = time.time()
+
+        while not stop_event.is_set():
+            elapsed = time.time() - start_time
+            char = spinner_chars[spinner_idx % len(spinner_chars)]
+            print(f"\r{char} Uploading {file_size_mb:.1f}MB to S3... ({elapsed:.1f}s)", end="", flush=True)
+            spinner_idx += 1
+            time.sleep(0.1)
+
     def sync_to_s3(self, zip_path: Path) -> bool:
         """Sync the ZIP file to S3 using AWS CLI with all settings from .env file."""
         # Get all AWS settings from environment variables (loaded from .env)
@@ -153,6 +170,10 @@ class ModulePackager:
             logger.error(f"AWS credentials not found. Set aws_access_key_id and aws_secret_access_key in environment file.")
             return False
 
+        # Get file size for progress indicator
+        file_size_bytes = zip_path.stat().st_size
+        file_size_mb = file_size_bytes / (1024 * 1024)
+
         # Construct S3 path (directly use zip file name without prefix)
         s3_uri = f"s3://{bucket}/{zip_path.name}"
 
@@ -168,15 +189,40 @@ class ModulePackager:
         env["AWS_SECRET_ACCESS_KEY"] = aws_secret_access_key
         logger.info(f"Using AWS settings from environment file (bucket: {bucket}, region: {region})")
 
+        # Start progress indicator
+        stop_event = threading.Event()
+        progress_thread = threading.Thread(target=self._show_progress_indicator, args=(stop_event, file_size_mb))
+        progress_thread.daemon = True
+        progress_thread.start()
+
         try:
-            logger.info(f"Syncing {zip_path.name} to {s3_uri}...")
+            logger.info(f"Syncing {zip_path.name} ({file_size_mb:.1f}MB) to {s3_uri}...")
             result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
+
+            # Stop progress indicator
+            stop_event.set()
+            progress_thread.join(timeout=1.0)
+            print(f"\r✓ Successfully uploaded {file_size_mb:.1f}MB to S3: {s3_uri}" + " " * 20)
+            print()  # Add newline for clean output
+
             logger.info(f"Successfully synced to S3: {s3_uri}")
             return True
         except subprocess.CalledProcessError as e:
+            # Stop progress indicator
+            stop_event.set()
+            progress_thread.join(timeout=1.0)
+            print(f"\r✗ Upload failed" + " " * 50)
+            print()  # Add newline for clean output
+
             logger.error(f"Failed to sync to S3: {e.stderr}")
             return False
         except FileNotFoundError:
+            # Stop progress indicator
+            stop_event.set()
+            progress_thread.join(timeout=1.0)
+            print(f"\r✗ AWS CLI not found" + " " * 50)
+            print()  # Add newline for clean output
+
             logger.error("AWS CLI not found. Please install AWS CLI to use S3 sync functionality.")
             return False
 

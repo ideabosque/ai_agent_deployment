@@ -199,7 +199,9 @@ python module_packager.py mcp_hubspot_connector
 2024-01-15 10:30:15,123 - INFO - Loaded environment variables from .env.dev
 2024-01-15 10:30:15,124 - INFO - Package created: ./mcp_hubspot_connector.zip
 2024-01-15 10:30:15,125 - INFO - Using AWS settings from environment file (bucket: silvaengine-dev-packages, region: us-east-1)
-2024-01-15 10:30:15,126 - INFO - Syncing mcp_hubspot_connector.zip to s3://silvaengine-dev-packages/mcp_hubspot_connector.zip...
+2024-01-15 10:30:15,126 - INFO - Syncing mcp_hubspot_connector.zip (15.3MB) to s3://silvaengine-dev-packages/mcp_hubspot_connector.zip...
+| Uploading 15.3MB to S3... (2.1s)
+✓ Successfully uploaded 15.3MB to S3: s3://silvaengine-dev-packages/mcp_hubspot_connector.zip
 2024-01-15 10:30:17,456 - INFO - Successfully synced to S3: s3://silvaengine-dev-packages/mcp_hubspot_connector.zip
 ```
 
@@ -385,6 +387,7 @@ mcp_hubspot_connector.zip
 - **S3 Integration**: Seamless AWS S3 sync with environment-specific configurations
 - **Secure Credential Management**: Environment-specific AWS credentials via .env files
 - **AWS CLI Integration**: Leverages existing AWS CLI setup for reliable uploads
+- **Upload Progress**: Real-time progress indicator with file size and elapsed time during S3 uploads
 
 ## Security
 
