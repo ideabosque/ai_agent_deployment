@@ -117,8 +117,12 @@ class ModulePackager:
                         if line and not line.startswith('#') and '=' in line:
                             key, value = line.split('=', 1)
                             key = key.strip()
+                            # Remove inline comments and clean up value
+                            if '#' in value:
+                                value = value.split('#')[0]
                             value = value.strip().strip('"').strip("'")
-                            os.environ[key] = value
+                            if value:  # Only set non-empty values
+                                os.environ[key] = value
                 logger.info(f"Loaded environment variables from {env_path}")
             else:
                 logger.info(f"No .env file found at {env_path}, using existing environment variables")
