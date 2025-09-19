@@ -196,13 +196,19 @@ class ModulePackager:
             return
         self.processed.add(module_name)
 
-        base_module = module_name.split(".")[0]
-        is_excluded = base_module in self.excluded_modules
-        if is_excluded:
-            logger.info(
-                f"Found excluded module (will skip in packaging): {module_name}"
-            )
-        else:
+        # Check if module or any of its parent modules are excluded
+        module_parts = module_name.split(".")
+        is_excluded = False
+        for i in range(1, len(module_parts) + 1):
+            parent_module = ".".join(module_parts[:i])
+            if parent_module in self.excluded_modules:
+                is_excluded = True
+                logger.info(
+                    f"Found excluded module (will skip in packaging): {module_name} (parent {parent_module} is excluded)"
+                )
+                break
+
+        if not is_excluded:
             logger.info(f"Processing dependency: {module_name}")
 
         try:
@@ -535,7 +541,7 @@ class ModulePackager:
         return dep_dists, dep_modules, tree
 
     def inspect_dependencies(
-        self, module_or_dist: str, strategy: str = "auto", include_extras: bool = False
+        self, module_or_dist: str, strategy: str = "auto", include_extras: bool = False, extra_modules: List[str] = None
     ):
         """
         Compute recursive dependencies.
@@ -547,6 +553,11 @@ class ModulePackager:
         dep_modules: Set[str] = set()
         dep_dists: Set[str] = set()
         tree_kind: Optional[str] = None
+
+        # Add extra modules to the dependency set
+        if extra_modules:
+            logger.info(f"Adding extra modules to dependencies: {', '.join(extra_modules)}")
+            dep_modules.update(extra_modules)
 
         if strategy in ("metadata", "auto"):
             try:
@@ -589,9 +600,17 @@ class ModulePackager:
         """Collect files for a set of top-level module names (reuses existing rules)."""
         files_to_package: Dict[str, Path] = {}
         for dep in sorted(set(module_names)):
-            base_dep = dep.split(".")[0]
-            if base_dep in self.excluded_modules:
-                logger.info(f"Skipping excluded dependency: {dep}")
+            # Check if module or any of its parent modules are excluded
+            module_parts = dep.split(".")
+            is_excluded = False
+            for i in range(1, len(module_parts) + 1):
+                parent_module = ".".join(module_parts[:i])
+                if parent_module in self.excluded_modules:
+                    is_excluded = True
+                    logger.info(f"Skipping excluded dependency: {dep} (parent {parent_module} is excluded)")
+                    break
+
+            if is_excluded:
                 continue
 
             logger.info(f"Collecting files for dependency: {dep}")
@@ -652,6 +671,7 @@ class ModulePackager:
         output_dir: Optional[Path] = None,
         include_extras: bool = False,
         strategy: str = "auto",
+        extra_modules: List[str] = None,
     ):
         """Create a ZIP package containing the module and all (recursively) resolved dependencies."""
         output_dir = Path(output_dir) if output_dir else Path.cwd()
@@ -659,7 +679,7 @@ class ModulePackager:
 
         # Resolve the recursive dependency set
         dep_modules, dep_dists, _tree, _kind = self.inspect_dependencies(
-            module_name, strategy=strategy, include_extras=include_extras
+            module_name, strategy=strategy, include_extras=include_extras, extra_modules=extra_modules
         )
 
         if not dep_modules:
@@ -779,8 +799,9 @@ def main():
     )
     parser.add_argument(
         "--include-extras",
-        action="store_true",
-        help="Include optional extras from Requires-Dist during metadata resolution",
+        type=str,
+        default="",
+        help="Comma-separated list of additional modules to include in packaging (e.g., 'module1,module2,module3')",
     )
     parser.add_argument(
         "--inspect",
@@ -797,6 +818,11 @@ def main():
 
     args = parser.parse_args()
 
+    # Parse include-extras as a list of modules
+    include_extras_list = []
+    if args.include_extras:
+        include_extras_list = [module.strip() for module in args.include_extras.split(",") if module.strip()]
+
     # Set up print function based on slow-print option
     if args.slow_print > 0:
         def print_func(text: str):
@@ -808,7 +834,7 @@ def main():
 
     if args.inspect:
         mods, dists, tree, kind = packager.inspect_dependencies(
-            args.module, strategy=args.strategy, include_extras=args.include_extras
+            args.module, strategy=args.strategy, include_extras=False, extra_modules=include_extras_list
         )
         print_func("=" * 60)
         print_func(f"DEPENDENCY ANALYSIS FOR: {args.module}")
@@ -816,6 +842,8 @@ def main():
         print_func(f"Strategy Used: {kind or 'none'}")
         print_func(f"Total Distributions: {len(dists)}")
         print_func(f"Total Top-level Modules: {len(mods)}")
+        if include_extras_list:
+            print_func(f"Extra Modules Included: {len(include_extras_list)} ({', '.join(include_extras_list)})")
         print_func("")
 
         if dists:
@@ -875,8 +903,9 @@ def main():
     zip_path = packager.create_package(
         args.module,
         Path(args.output_dir),
-        include_extras=args.include_extras,
+        include_extras=False,
         strategy=args.strategy,
+        extra_modules=include_extras_list,
     )
 
     if zip_path:
