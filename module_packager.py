@@ -23,6 +23,7 @@ import importlib.metadata
 import importlib.util
 import logging
 import sys
+import time
 import zipfile
 from collections import defaultdict
 from pathlib import Path
@@ -49,6 +50,14 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
+def slow_print(text: str, delay: float = 0.03):
+    """Print text character by character with a delay."""
+    for char in text:
+        print(char, end='', flush=True)
+        time.sleep(delay)
+    print()  # Add newline at the end
 
 
 class ModulePackager:
@@ -283,11 +292,25 @@ class ModulePackager:
         if not module_name or module_name in self.processed:
             return
 
+        # Check if module or any of its parent modules are excluded
+        module_parts = module_name.split(".")
+        for i in range(1, len(module_parts) + 1):
+            parent_module = ".".join(module_parts[:i])
+
+            # Check against excluded modules
+            if parent_module in self.excluded_modules:
+                logger.debug(f"Skipping {module_name}: parent {parent_module} is excluded")
+                return
+
         # Prefer Python's own stdlib listing when available (3.10+)
         try:
             stdlib_names = getattr(sys, "stdlib_module_names", set())
-            if module_name.split(".")[0] in stdlib_names:
-                return
+            # Check if any parent module is in stdlib
+            for i in range(1, len(module_parts) + 1):
+                parent_module = ".".join(module_parts[:i])
+                if parent_module in stdlib_names:
+                    logger.debug(f"Skipping {module_name}: parent {parent_module} is stdlib")
+                    return
         except Exception:
             pass
 
@@ -398,8 +421,12 @@ class ModulePackager:
             "faulthandler",
             "tracemalloc",
         }
-        if module_name in stdlib_modules:
-            return
+        # Check if any parent module is in stdlib (fallback)
+        for i in range(1, len(module_parts) + 1):
+            parent_module = ".".join(module_parts[:i])
+            if parent_module in stdlib_modules:
+                logger.debug(f"Skipping {module_name}: parent {parent_module} is stdlib (fallback)")
+                return
 
         parts = module_name.split(".")
         # Check for dependencies in site-packages
@@ -760,8 +787,22 @@ def main():
         action="store_true",
         help="Only inspect the resolved dependency sets and print an ASCII tree (no zip)",
     )
+    parser.add_argument(
+        "--slow-print",
+        type=float,
+        default=0.0,
+        metavar="DELAY",
+        help="Enable slow character-by-character printing with specified delay in seconds (e.g., 0.03)",
+    )
 
     args = parser.parse_args()
+
+    # Set up print function based on slow-print option
+    if args.slow_print > 0:
+        def print_func(text: str):
+            slow_print(text, args.slow_print)
+    else:
+        print_func = print
 
     packager = ModulePackager(args.venv_path)
 
@@ -769,28 +810,28 @@ def main():
         mods, dists, tree, kind = packager.inspect_dependencies(
             args.module, strategy=args.strategy, include_extras=args.include_extras
         )
-        print("=" * 60)
-        print(f"DEPENDENCY ANALYSIS FOR: {args.module}")
-        print("=" * 60)
-        print(f"Strategy Used: {kind or 'none'}")
-        print(f"Total Distributions: {len(dists)}")
-        print(f"Total Top-level Modules: {len(mods)}")
-        print()
+        print_func("=" * 60)
+        print_func(f"DEPENDENCY ANALYSIS FOR: {args.module}")
+        print_func("=" * 60)
+        print_func(f"Strategy Used: {kind or 'none'}")
+        print_func(f"Total Distributions: {len(dists)}")
+        print_func(f"Total Top-level Modules: {len(mods)}")
+        print_func("")
 
         if dists:
-            print("📦 DISTRIBUTIONS:")
+            print_func("📦 DISTRIBUTIONS:")
             for d in sorted(dists):
-                print(f"  • {d}")
-            print()
+                print_func(f"  • {d}")
+            print_func("")
 
         if mods:
-            print("🐍 TOP-LEVEL MODULES:")
+            print_func("🐍 TOP-LEVEL MODULES:")
             for m in sorted(mods):
-                print(f"  • {m}")
-            print()
+                print_func(f"  • {m}")
+            print_func("")
 
         # Tree view
-        print("🌳 DEPENDENCY TREE:")
+        print_func("🌳 DEPENDENCY TREE:")
         if kind == "metadata":
             # Build incoming count to find roots in the dist graph
             incoming: Dict[str, int] = defaultdict(int)
@@ -803,7 +844,7 @@ def main():
                 [n for n in tree.keys() if incoming.get(n, 0) == 0 and n not in roots]
             )
             ascii_tree = ModulePackager._render_tree(tree, roots)
-            print(ascii_tree)
+            print_func(ascii_tree)
         elif kind == "imports":
             # For imports strategy, find actual roots (modules with no incoming dependencies)
             incoming: Dict[str, int] = defaultdict(int)
@@ -823,11 +864,11 @@ def main():
 
             if actual_roots and tree:
                 ascii_tree = ModulePackager._render_tree(tree, actual_roots)
-                print(ascii_tree)
+                print_func(ascii_tree)
             else:
-                print(f"No import dependencies found for '{args.module}'")
+                print_func(f"No import dependencies found for '{args.module}'")
         else:
-            print("(no tree available)")
+            print_func("(no tree available)")
         return
 
     # Otherwise, produce zip
