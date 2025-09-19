@@ -1,13 +1,49 @@
 #!/usr/bin/env python3
+"""
+module_packager_recursive.py
+
+Enhances dependency discovery for a target module/package with two complementary strategies:
+  - "imports": Recursively crawl source files (AST) to find transitive imports and render an import-tree.
+  - "metadata": Follow Requires-Dist from package metadata (pip-style) recursively and render a dependency tree.
+  - "auto": Try metadata first; if it finds nothing, fall back to imports.
+
+Adds:
+  - "--inspect" to print resolved dependency sets and an ASCII tree (depending on strategy).
+  - "--include-extras" to include optional extras in metadata resolution (replaces --additional-modules).
+
+Usage examples:
+  python module_packager_recursive.py requests /path/to/venv --inspect --strategy auto
+  python module_packager_recursive.py requests /path/to/venv --strategy metadata --include-extras --output-dir dist
+  python module_packager_recursive.py requests /path/to/venv --strategy imports  --inspect
+"""
+
 import argparse
 import importlib
+import importlib.metadata
 import importlib.util
 import logging
-import os
-import pkgutil
 import sys
 import zipfile
+from collections import defaultdict
 from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Set, Tuple
+
+# Optional: robust parsing for "Requires-Dist" lines
+try:
+    from packaging.requirements import Requirement  # type: ignore
+except Exception:  # lightweight fallback if "packaging" isn't installed
+
+    class Requirement:  # minimal parser: name[; or ( or space] ...
+        def __init__(self, req: str):
+            req = req.strip()
+            cut = len(req)
+            for sep in [";", "(", " "]:
+                if sep in req:
+                    cut = min(cut, req.index(sep))
+            self.name = req[:cut].strip()
+            self.extras = set()
+            self.marker = None
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -16,12 +52,17 @@ logger = logging.getLogger(__name__)
 
 
 class ModulePackager:
-    def __init__(self, venv_path):
+    def __init__(self, venv_path: str):
         self.venv_path = Path(venv_path)
         self.site_packages = self._find_site_packages()
-        self.dependencies = set()
-        self.processed = set()
-        self.external_deps = set()
+        self.dependencies: Set[str] = set()
+        self.processed: Set[str] = set()
+        self.external_deps: Set[str] = set()
+        # For building an import tree when using AST strategy
+        self.import_edges: Dict[str, Set[str]] = defaultdict(
+            set
+        )  # parent -> children (top-level names)
+
         self.excluded_modules = {
             # SilvaEngine Layer
             "boto3",
@@ -120,31 +161,32 @@ class ModulePackager:
             "rpds",
         }
 
-    def _find_site_packages(self):
+    # ------------------------------
+    # Environment discovery
+    # ------------------------------
+    def _find_site_packages(self) -> Path:
         """Find site-packages directory in venv"""
-        # Look for site-packages in common locations
         possible_paths = [
             self.venv_path / "lib" / "python3.11" / "site-packages",
             self.venv_path / "lib" / "python3.10" / "site-packages",
             self.venv_path / "lib" / "python3.9" / "site-packages",
             self.venv_path / "Lib" / "site-packages",  # Windows
         ]
-
         for path in possible_paths:
             if path.exists():
                 logger.info(f"Found site-packages at: {path}")
                 return path
-
         raise ValueError(f"Could not find site-packages in {self.venv_path}")
 
-    def find_module_dependencies(self, module_name):
-        """Recursively find all dependencies for a module"""
+    # ------------------------------
+    # IMPORT (AST) STRATEGY
+    # ------------------------------
+    def find_module_dependencies(self, module_name: str):
+        """Recursively find all dependencies for a module by walking its imports."""
         if module_name in self.processed:
             return
-
         self.processed.add(module_name)
 
-        # Check if module is in excluded list - still discover but mark for exclusion
         base_module = module_name.split(".")[0]
         is_excluded = base_module in self.excluded_modules
         if is_excluded:
@@ -155,76 +197,62 @@ class ModulePackager:
             logger.info(f"Processing dependency: {module_name}")
 
         try:
-            # Look for module in site_packages
             module_path = self.site_packages / module_name
-
             if module_path.exists():
                 if not is_excluded:
                     self.external_deps.add(module_name)
-                    logger.info(f"Added dependency: {module_name}")
-
-                # Parse all Python files in the module to find more dependencies
                 if module_path.is_dir():
-                    # Parse all Python files in the package
                     for py_file in module_path.rglob("*.py"):
                         if py_file.is_file():
-                            logger.debug(f"Parsing imports from {py_file}")
                             self._parse_imports(py_file, module_name)
                 else:
-                    # Check if there's a .py file with this name
                     py_file = self.site_packages / f"{module_name}.py"
                     if py_file.exists():
-                        logger.debug(f"Parsing imports from {py_file}")
                         self._parse_imports(py_file, module_name)
             else:
-                # Try to use importlib as fallback
                 try:
                     spec = importlib.util.find_spec(module_name)
                     if spec and spec.origin:
                         module_file = Path(spec.origin)
-                        # Only process if it's in site_packages
                         if str(self.site_packages) in str(module_file):
                             if not is_excluded:
                                 self.external_deps.add(module_name)
-                                logger.info(
-                                    f"Added dependency via importlib: {module_name}"
-                                )
-                            logger.debug(
-                                f"Parsing imports from {module_file} (via importlib)"
-                            )
                             self._parse_imports(module_file, module_name)
                         else:
                             logger.debug(
-                                f"Skipping {module_name}: not in site_packages"
+                                f"Skipping {module_name}: not in site-packages"
                             )
                 except Exception as e:
                     logger.warning(f"Could not find or parse {module_name}: {e}")
-
         except Exception as e:
             logger.error(f"Error processing {module_name}: {e}")
 
-    def _parse_imports(self, file_path, current_module=None):
-        """Parse import statements from a Python file"""
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
+    def _record_edge(self, parent: Optional[str], child: Optional[str]):
+        if not parent or not child:
+            return
+        p = parent.split(".")[0]
+        c = child.split(".")[0]
+        if p != c:  # avoid self-edge
+            self.import_edges[p].add(c)
 
+    def _parse_imports(self, file_path: Path, current_module: Optional[str] = None):
+        """Parse import statements from a Python file using AST and record edges."""
+        try:
+            content = Path(file_path).read_text(encoding="utf-8", errors="ignore")
             import ast
 
             tree = ast.parse(content)
-
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     for alias in node.names:
+                        self._record_edge(current_module, alias.name)
                         self._check_module(alias.name)
                 elif isinstance(node, ast.ImportFrom):
                     if node.module:
-                        # Handle absolute imports
+                        self._record_edge(current_module, node.module)
                         self._check_module(node.module)
                     elif node.level > 0 and current_module:
-                        # Handle relative imports (from . import, from .. import)
                         if node.level == 1:
-                            # Same package relative import
                             if "." in current_module:
                                 parent_module = ".".join(current_module.split(".")[:-1])
                                 for alias in node.names:
@@ -234,29 +262,37 @@ class ModulePackager:
                                             if parent_module
                                             else alias.name
                                         )
+                                        self._record_edge(current_module, full_name)
                                         self._check_module(full_name)
                             else:
                                 for alias in node.names:
                                     if alias.name != "*":
+                                        self._record_edge(current_module, alias.name)
                                         self._check_module(alias.name)
-                        # Could add more levels if needed
-                    # Also check imported names for ImportFrom
                     if node.module:
                         for alias in node.names:
                             if alias.name != "*":
-                                full_import_name = f"{node.module}.{alias.name}"
-                                self._check_module(full_import_name)
-
+                                full_name = f"{node.module}.{alias.name}"
+                                self._record_edge(current_module, full_name)
+                                self._check_module(full_name)
         except Exception as e:
             logger.error(f"Error parsing {file_path}: {e}")
 
-    def _check_module(self, module_name):
-        """Check if module is in site_packages and add to dependencies"""
+    def _check_module(self, module_name: str):
+        """If module is in site-packages, queue it for recursive processing."""
         if not module_name or module_name in self.processed:
             return
 
-        # Skip standard library modules
-        stdlib_modules = [
+        # Prefer Python's own stdlib listing when available (3.10+)
+        try:
+            stdlib_names = getattr(sys, "stdlib_module_names", set())
+            if module_name.split(".")[0] in stdlib_names:
+                return
+        except Exception:
+            pass
+
+        # Static fallback list for older Pythons
+        stdlib_modules = {
             "os",
             "sys",
             "json",
@@ -361,110 +397,171 @@ class ModulePackager:
             "cProfile",
             "faulthandler",
             "tracemalloc",
-        ]
+        }
         if module_name in stdlib_modules:
             return
 
-        # Split module name to check parent modules
         parts = module_name.split(".")
-
         # Check for dependencies in site-packages
         for i in range(len(parts), 0, -1):
-            partial_name = ".".join(parts[:i])
-            ext_path = self.site_packages / partial_name
-
+            partial = ".".join(parts[:i])
+            ext_path = self.site_packages / partial
             if ext_path.exists():
-                if partial_name not in self.processed:
-                    # Use the main recursive method for full dependency discovery
-                    self.find_module_dependencies(partial_name)
+                if partial not in self.processed:
+                    self.find_module_dependencies(partial)
                 return
 
-        # Check for common package name variations
-        base_name = parts[0]
-        variations = [
-            base_name,
-            base_name.replace("_", "-"),
-            base_name.replace("-", "_"),
-        ]
-
-        for variation in variations:
-            # Check in site-packages
-            ext_path = self.site_packages / variation
-            if ext_path.exists() and variation not in self.processed:
-                # Use the main recursive method for full dependency discovery
-                self.find_module_dependencies(variation)
+        # Try common name variations
+        base = parts[0]
+        variations = [base, base.replace("_", "-"), base.replace("-", "_")]
+        for v in variations:
+            ext_path = self.site_packages / v
+            if ext_path.exists() and v not in self.processed:
+                self.find_module_dependencies(v)
                 return
 
-    def _find_external_dependencies(self, module_name):
-        """Find dependencies of external modules - simplified to avoid infinite recursion"""
-        if module_name in self.processed:
-            return
-
-        self.processed.add(module_name)
-
+    # ------------------------------
+    # METADATA STRATEGY
+    # ------------------------------
+    def _dist_top_levels(self, dist: importlib.metadata.Distribution) -> List[str]:
+        """Return top-level importable names for a distribution (best-effort)."""
         try:
-            ext_path = self.site_packages / module_name
-            if ext_path.is_dir():
-                # Only parse top-level __init__.py to avoid deep recursion
-                init_file = ext_path / "__init__.py"
-                if init_file.exists():
-                    self._parse_imports(init_file, module_name)
+            files = list(dist.files or [])
+            for f in files:
+                if f.name.endswith("top_level.txt"):
+                    txt = dist.read_text(str(f)) or ""
+                    lines = [ln.strip() for ln in txt.splitlines() if ln.strip()]
+                    if lines:
+                        return lines
+        except Exception:
+            pass
+        name = (dist.metadata.get("Name") or "").strip()
+        return [name.replace("-", "_")] if name else []
 
-            # Also check for related packages (e.g., package-version.dist-info)
-            for related in self.site_packages.glob(f"{module_name}*"):
-                if related.is_dir() and related.name != module_name:
-                    if related.name.endswith(".dist-info") or related.name.endswith(
-                        ".egg-info"
-                    ):
+    def _normalize_req(self, req_str: str):
+        """Parse a Requires-Dist entry into (name, extras, marker)."""
+        try:
+            r = Requirement(req_str)
+            return (
+                getattr(r, "name", None),
+                getattr(r, "extras", set()),
+                getattr(r, "marker", None),
+            )
+        except Exception:
+            # very naive fallback: take token until first space/;/(
+            s = req_str.strip()
+            cut = len(s)
+            for sep in [";", "(", " "]:
+                if sep in s:
+                    cut = min(cut, s.index(sep))
+            return s[:cut], set(), None
+
+    def build_metadata_graph(self, root_dist_name: str, include_extras: bool = False):
+        """
+        Recursively resolve Requires-Dist starting from a distribution name.
+        Returns (dep_dists, dep_modules, tree):
+          dep_dists: distribution names
+          dep_modules: top-level module names
+          tree: adjacency list mapping parent dist -> set(child dists)
+        """
+        seen: Set[str] = set()
+        stack: List[str] = [root_dist_name]
+        dep_dists: Set[str] = set()
+        dep_modules: Set[str] = set()
+        tree: Dict[str, Set[str]] = defaultdict(set)
+
+        while stack:
+            name = stack.pop()
+            key = name.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+
+            try:
+                dist = importlib.metadata.distribution(name)
+            except importlib.metadata.PackageNotFoundError:
+                logger.warning(f"Distribution not found: {name}")
+                continue
+
+            dist_name = dist.metadata.get("Name", name)
+            dep_dists.add(dist_name)
+
+            # Map distribution → top-level modules
+            for top in self._dist_top_levels(dist):
+                dep_modules.add(top)
+
+            # Follow transitive requirements
+            for req_str in dist.metadata.get_all("Requires-Dist") or []:
+                rname, extras, marker = self._normalize_req(req_str)
+                if not rname:
+                    continue
+                try:
+                    if marker and hasattr(marker, "evaluate") and not marker.evaluate():
                         continue
-                    # Check if it's a valid Python package name (avoid version suffixes)
-                    if "-" not in related.name or related.name.replace(
-                        "-", "_"
-                    ) == module_name.replace("-", "_"):
-                        if related.name not in self.processed:
-                            # Use the main recursive method for full dependency discovery
-                            self.find_module_dependencies(related.name)
+                except Exception:
+                    pass  # if packaging not present, ignore marker
+                if extras and not include_extras:
+                    continue
+                tree[dist_name].add(rname)
+                stack.append(rname)
 
-        except Exception as e:
-            logger.warning(
-                f"Error finding dependencies for external module {module_name}: {e}"
-            )
+        return dep_dists, dep_modules, tree
 
-    def collect_module_files(self, module_name):
-        """Collect all files for a module and its dependencies"""
-        files_to_package = {}
+    def inspect_dependencies(
+        self, module_or_dist: str, strategy: str = "auto", include_extras: bool = False
+    ):
+        """
+        Compute recursive dependencies.
+        strategy: 'imports' (AST), 'metadata' (Requires-Dist), or 'auto' (metadata then fallback).
+        Returns (dep_modules, dep_dists, tree, tree_kind) where:
+          - tree is an adjacency dict (dist graph for metadata, import graph for imports)
+          - tree_kind in {"metadata", "imports", None}
+        """
+        dep_modules: Set[str] = set()
+        dep_dists: Set[str] = set()
+        tree_kind: Optional[str] = None
 
-        # First, find all dependencies
-        self.find_module_dependencies(module_name)
-
-        logger.info(
-            f"Found {len(self.external_deps)} dependencies: {self.external_deps}"
-        )
-
-        if len(self.external_deps) == 0:
-            logger.warning(
-                "No dependencies found! This might indicate an issue with dependency detection."
-            )
-            logger.info(f"Site packages: {self.site_packages}")
-            logger.info(f"Current working directory: {Path.cwd()}")
-            # Check if the target module itself exists
-            target_path = self.site_packages / module_name
-            if not target_path.exists():
-                logger.error(
-                    f"Target module '{module_name}' not found at {target_path}"
+        if strategy in ("metadata", "auto"):
+            try:
+                d_dists, d_mods, d_tree = self.build_metadata_graph(
+                    module_or_dist, include_extras=include_extras
                 )
-                logger.info("Available modules in site-packages:")
-                for item in self.site_packages.iterdir():
-                    if (
-                        item.is_dir()
-                        and not item.name.startswith(".")
-                        and not item.name.endswith((".dist-info", ".egg-info"))
-                    ):
-                        logger.info(f"  - {item.name}")
+                if d_dists or d_mods:
+                    dep_modules |= d_mods
+                    dep_dists |= d_dists
+                    tree_kind = "metadata"
+                    return dep_modules, dep_dists, d_tree, tree_kind
+            except Exception as e:
+                logger.info(f"Metadata resolution failed for '{module_or_dist}': {e}")
 
-        # Collect all dependencies from site-packages
-        for dep in self.external_deps:
-            # Skip excluded modules
+        # Fallback to AST import walker
+        self.external_deps.clear()
+        self.processed.clear()
+        self.import_edges.clear()
+        self.find_module_dependencies(module_or_dist)
+        dep_modules |= set(self.external_deps)
+        tree_kind = "imports"
+
+        # Best-effort: infer distributions for discovered modules
+        try:
+            for dist in importlib.metadata.distributions():
+                tops = set(self._dist_top_levels(dist))
+                if any(m.split(".")[0] in tops for m in dep_modules):
+                    name = dist.metadata.get("Name", "")
+                    if name:
+                        dep_dists.add(name)
+        except Exception:
+            pass
+
+        return dep_modules, dep_dists, self.import_edges, tree_kind
+
+    # ------------------------------
+    # FILE COLLECTION & PACKAGING
+    # ------------------------------
+    def collect_modules_by_names(self, module_names: Set[str]):
+        """Collect files for a set of top-level module names (reuses existing rules)."""
+        files_to_package: Dict[str, Path] = {}
+        for dep in sorted(set(module_names)):
             base_dep = dep.split(".")[0]
             if base_dep in self.excluded_modules:
                 logger.info(f"Skipping excluded dependency: {dep}")
@@ -474,152 +571,201 @@ class ModulePackager:
             ext_path = self.site_packages / dep
             if ext_path.exists():
                 if ext_path.is_dir():
-                    file_count = 0
                     for file_path in ext_path.rglob("*"):
                         if (
                             file_path.is_file()
                             and not file_path.name.startswith(".")
                             and not file_path.name.endswith(".pyc")
                         ):
-                            # Skip large unnecessary files
-                            if (
-                                file_path.suffix in [".so", ".dll", ".dylib"]
-                                and file_path.stat().st_size > 50 * 1024 * 1024
-                            ):  # Skip files > 50MB
-                                logger.debug(f"Skipping large binary file: {file_path}")
-                                continue
-                            # Place dependencies directly at root level
+                            try:
+                                if (
+                                    file_path.suffix in [".so", ".dll", ".dylib"]
+                                    and file_path.stat().st_size > 50 * 1024 * 1024
+                                ):
+                                    continue
+                            except Exception:
+                                pass
                             rel_path = file_path.relative_to(
                                 self.site_packages
                             ).as_posix()
                             files_to_package[rel_path] = file_path
-                            file_count += 1
-                            logger.debug(f"Adding file: {rel_path}")
-                    logger.info(f"Added {file_count} files from package: {dep}")
                 else:
-                    # Handle single file module or check if there's a .py file with this name
                     py_file = self.site_packages / f"{dep}.py"
                     if py_file.exists():
-                        rel_path = f"{dep}.py"
-                        files_to_package[rel_path] = py_file
-                        logger.info(f"Added file: {rel_path}")
+                        files_to_package[f"{dep}.py"] = py_file
                     elif ext_path.suffix == ".py":
                         rel_path = ext_path.relative_to(self.site_packages).as_posix()
                         files_to_package[rel_path] = ext_path
-                        logger.info(f"Added file: {rel_path}")
 
-            # Also include corresponding .dist-info/.egg-info for this dependency
+            # Add matching *.dist-info / *.egg-info
             for info_dir in self.site_packages.glob(f"{dep}*"):
                 if info_dir.is_dir() and (
                     info_dir.name.endswith(".dist-info")
                     or info_dir.name.endswith(".egg-info")
                 ):
-                    # Check if this metadata belongs to an excluded module
                     metadata_module = info_dir.name.split("-")[0].replace("_", "-")
                     if (
                         metadata_module in self.excluded_modules
                         or metadata_module.replace("-", "_") in self.excluded_modules
                     ):
-                        logger.info(
-                            f"Skipping metadata for excluded module: {metadata_module}"
-                        )
                         continue
-
                     for file_path in info_dir.rglob("*"):
                         if file_path.is_file():
-                            # Place metadata files directly at root level
                             rel_path = file_path.relative_to(
                                 self.site_packages
                             ).as_posix()
                             files_to_package[rel_path] = file_path
-                            logger.debug(f"Adding metadata file: {rel_path}")
 
         logger.info(f"Total files to package: {len(files_to_package)}")
         return files_to_package
 
-    def create_package(self, module_name, output_dir=None, additional_modules=None):
-        """Create a ZIP package containing the module and all dependencies"""
-        if not output_dir:
-            output_dir = Path.cwd()
-        else:
-            output_dir = Path(output_dir)
+    def create_package(
+        self,
+        module_name: str,
+        output_dir: Optional[Path] = None,
+        include_extras: bool = False,
+        strategy: str = "auto",
+    ):
+        """Create a ZIP package containing the module and all (recursively) resolved dependencies."""
+        output_dir = Path(output_dir) if output_dir else Path.cwd()
+        output_dir.mkdir(exist_ok=True, parents=True)
 
-        output_dir.mkdir(exist_ok=True)
+        # Resolve the recursive dependency set
+        dep_modules, dep_dists, _tree, _kind = self.inspect_dependencies(
+            module_name, strategy=strategy, include_extras=include_extras
+        )
 
-        # Collect all files for main module
-        files_to_package = self.collect_module_files(module_name)
-
-        # Process additional modules if provided
-        if additional_modules:
-            for additional_module in additional_modules:
-                logger.info(f"Processing additional module: {additional_module}")
-                # Reset the state for each additional module to ensure clean processing
-                additional_packager = ModulePackager(self.venv_path)
-                additional_files = additional_packager.collect_module_files(
-                    additional_module
-                )
-
-                # Merge files, with additional modules taking precedence if there are conflicts
-                for archive_path, file_path in additional_files.items():
-                    if archive_path in files_to_package:
-                        logger.warning(
-                            f"File conflict: {archive_path} already exists, overwriting with version from {additional_module}"
-                        )
-                    files_to_package[archive_path] = file_path
-
-        if not files_to_package:
-            logger.error(f"No files found for module {module_name}")
+        if not dep_modules:
+            logger.error(
+                f"No dependencies found for '{module_name}' (strategy={strategy})"
+            )
             return None
 
-        # Create ZIP file
-        zip_path = output_dir / f"{module_name}.zip"
+        # Collect files for all resolved top-level modules
+        files_to_package = self.collect_modules_by_names(dep_modules)
+        if not files_to_package:
+            logger.error(f"No files gathered for '{module_name}' after collection.")
+            return None
 
+        zip_path = output_dir / f"{module_name}.zip"
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for archive_path, file_path in files_to_package.items():
                 zipf.write(file_path, archive_path)
                 logger.info(f"Added {archive_path} to package")
 
         logger.info(f"Package created: {zip_path}")
-        logger.info(f"Dependencies: {', '.join(sorted(self.external_deps))}")
-
+        logger.info(
+            f"Resolved {len(dep_modules)} modules and {len(dep_dists)} distributions."
+        )
         return zip_path
+
+    # ------------------------------
+    # TREE RENDERING (ASCII)
+    # ------------------------------
+    @staticmethod
+    def _render_tree(adjacency: Dict[str, Set[str]], roots: Iterable[str]) -> str:
+        """Render a clean ASCII tree from an adjacency list and a list of roots."""
+        lines: List[str] = []
+
+        def walk(node: str, prefix: str = "", is_last: bool = True):
+            connector = "└─ " if is_last else "├─ "
+            if prefix == "":
+                lines.append(node)
+            else:
+                lines.append(prefix + connector + node)
+            children = sorted(adjacency.get(node, []))
+            for i, ch in enumerate(children):
+                last = i == len(children) - 1
+                new_prefix = prefix + ("   " if is_last else "│  ")
+                walk(ch, new_prefix, last)
+
+        for r in sorted(set(roots)):
+            walk(r, "", True)
+        return "".join(lines)
+
+
+# ------------------------------
+# CLI
+# ------------------------------
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Package Python modules with dependencies"
+        description="Package Python modules with recursive dependency discovery (imports/metadata) and tree view"
     )
     parser.add_argument(
-        "module", help="Module name to package (e.g., mcp_hubspot_connector)"
+        "module", help="Module or distribution name to package/inspect (e.g., requests)"
     )
     parser.add_argument(
         "venv_path",
         help="Virtual environment path (e.g., /var/python3.11/silvaengine/env)",
     )
     parser.add_argument(
-        "--output-dir", help="Output directory for ZIP file", default="."
+        "--output-dir", default=".", help="Output directory for ZIP file"
     )
     parser.add_argument(
-        "--additional-modules",
-        help="Additional modules to include, separated by commas (e.g., module1,module2,module3)",
-        default="",
+        "--strategy",
+        choices=["auto", "imports", "metadata"],
+        default="auto",
+        help="Dependency resolution strategy: 'imports' (AST), 'metadata' (Requires-Dist), or 'auto' (default)",
+    )
+    parser.add_argument(
+        "--include-extras",
+        action="store_true",
+        help="Include optional extras from Requires-Dist during metadata resolution",
+    )
+    parser.add_argument(
+        "--inspect",
+        action="store_true",
+        help="Only inspect the resolved dependency sets and print an ASCII tree (no zip)",
     )
 
     args = parser.parse_args()
 
     packager = ModulePackager(args.venv_path)
 
-    # Process additional modules if provided
-    additional_modules = []
-    if args.additional_modules:
-        additional_modules = [
-            module.strip()
-            for module in args.additional_modules.split(",")
-            if module.strip()
-        ]
-        logger.info(f"Additional modules to include: {additional_modules}")
+    if args.inspect:
+        mods, dists, tree, kind = packager.inspect_dependencies(
+            args.module, strategy=args.strategy, include_extras=args.include_extras
+        )
+        print("== Strategy Used ==", kind or "none")
+        print("== Distributions ==")
+        for d in sorted(dists):
+            print(f" - {d}")
+        print("== Top-level modules ==")
+        for m in sorted(mods):
+            print(f" - {m}")
 
-    zip_path = packager.create_package(args.module, args.output_dir, additional_modules)
+        # Tree view
+        print("== Dependency Tree ==")
+        if kind == "metadata":
+            # Build incoming count to find roots in the dist graph
+            incoming: Dict[str, int] = defaultdict(int)
+            for parent, kids in tree.items():
+                for k in kids:
+                    incoming[k] += 1
+            # Prefer the provided name as a root; also include any with no incoming edges
+            roots = [args.module]
+            roots.extend(
+                [n for n in tree.keys() if incoming.get(n, 0) == 0 and n not in roots]
+            )
+            ascii_tree = ModulePackager._render_tree(tree, roots)
+            print(ascii_tree)
+        elif kind == "imports":
+            roots = [args.module.split(".")[0]]
+            ascii_tree = ModulePackager._render_tree(tree, roots)
+            print(ascii_tree)
+        else:
+            print("(no tree available)")
+        return
+
+    # Otherwise, produce zip
+    zip_path = packager.create_package(
+        args.module,
+        Path(args.output_dir),
+        include_extras=args.include_extras,
+        strategy=args.strategy,
+    )
 
     if zip_path:
         print(f"Successfully created package: {zip_path}")
