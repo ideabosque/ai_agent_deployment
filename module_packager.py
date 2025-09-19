@@ -21,7 +21,10 @@ import argparse
 import importlib
 import importlib.metadata
 import importlib.util
+import json
 import logging
+import os
+import subprocess
 import sys
 import time
 import zipfile
@@ -61,7 +64,18 @@ def slow_print(text: str, delay: float = 0.03):
 
 
 class ModulePackager:
-    def __init__(self, venv_path: str):
+    def __init__(self, venv_path: Optional[str] = None, config_path: str = "mcp_packages.json", env_file: str = ".env"):
+        # Load configuration from JSON file
+        self.config = self._load_config(config_path)
+
+        # Load environment variables from .env file
+        self._load_env_file(env_file)
+
+        # Use venv_path from parameter or config file
+        venv_path = venv_path or self.config.get("venv_path")
+        if not venv_path:
+            raise ValueError("venv_path must be provided either as parameter or in config file")
+
         self.venv_path = Path(venv_path)
         self.site_packages = self._find_site_packages()
         self.dependencies: Set[str] = set()
@@ -72,60 +86,95 @@ class ModulePackager:
             set
         )  # parent -> children (top-level names)
 
-        self.excluded_modules = {
-            # SilvaEngine Layer
-            "silvaengine_base",
-            "silvaengine_authorizer",
-            "silvaengine_utility",
-            "silvaengine_dynamodb_base",
-            "pynamodb",
-            "graphene",
-            "graphql",
-            "graphql_relay",
-            "jsonpickle",
-            "pendulum",
-            "certifi",
-            "yaml",
-            "rx",
-            "promise",
-            "sqlalchemy",
-            "aniso8601",
-            "deepdiff",
-            "ordered_set",
-            "tenacity",
-            "requests",
-            "requests_oauthlib",
-            "requests_toolbelt",
-            "jose",
-            "ecdsa",
-            "dotenv"
-            # MCP Layer
-            "ai_mcp_daemon_engine",
-            "idna",
-            "httpx",
-            "annotated_types",
-            "sniffio",
-            "anyio",
-            "typing_inspection",
-            "pydantic",
-            "pydantic_core",
-            "mcp",
-            "passlib",
-            "httpx_sse",
-            "pydantic_settings",
-            "starlette",
-            "sse_starlette",
-            "humps",
-            "shopify_connector",
-            "shopify",
-            "pyactiveresource",
-            "jsonschema",
-            "jsonschema_specifications",
-            "attr",
-            "attrs",
-            "referencing",
-            "rpds",
-        }
+        # Load excluded modules from config
+        self.excluded_modules = set(self.config.get("excluded_modules", []))
+
+    # ------------------------------
+    # Configuration loading
+    # ------------------------------
+    def _load_config(self, config_path: str) -> Dict:
+        """Load configuration from JSON file."""
+        try:
+            config_file = Path(config_path)
+            if config_file.exists():
+                with open(config_file, 'r') as f:
+                    return json.load(f)
+            else:
+                logger.warning(f"Config file {config_path} not found, using defaults")
+                return {}
+        except Exception as e:
+            logger.error(f"Error loading config file {config_path}: {e}")
+            return {}
+
+    def _load_env_file(self, env_path: str = ".env") -> None:
+        """Load environment variables from .env file."""
+        try:
+            env_file = Path(env_path)
+            if env_file.exists():
+                with open(env_file, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            key = key.strip()
+                            value = value.strip().strip('"').strip("'")
+                            os.environ[key] = value
+                logger.info(f"Loaded environment variables from {env_path}")
+            else:
+                logger.info(f"No .env file found at {env_path}, using existing environment variables")
+        except Exception as e:
+            logger.warning(f"Error loading .env file {env_path}: {e}")
+
+    def get_module_extras(self, module_name: str) -> List[str]:
+        """Get include_extras for a specific module from config."""
+        modules_config = self.config.get("modules", {})
+        module_config = modules_config.get(module_name, {})
+        return module_config.get("include_extras", [])
+
+
+    def sync_to_s3(self, zip_path: Path) -> bool:
+        """Sync the ZIP file to S3 using AWS CLI with all settings from .env file."""
+        # Get all AWS settings from environment variables (loaded from .env)
+        aws_access_key_id = os.environ.get("aws_access_key_id")
+        aws_secret_access_key = os.environ.get("aws_secret_access_key")
+        bucket = os.environ.get("mcp_bucket")
+        region = os.environ.get("region_name")
+
+        # Validate required settings
+        if not bucket:
+            logger.error(f"No bucket specified. Set mcp_bucket in environment file.")
+            return False
+
+        if not aws_access_key_id or not aws_secret_access_key:
+            logger.error(f"AWS credentials not found. Set aws_access_key_id and aws_secret_access_key in environment file.")
+            return False
+
+        # Construct S3 path (directly use zip file name without prefix)
+        s3_uri = f"s3://{bucket}/{zip_path.name}"
+
+        # Build AWS CLI command
+        cmd = ["aws", "s3", "cp", str(zip_path), s3_uri]
+
+        if region:
+            cmd.extend(["--region", region])
+
+        # Set up environment with AWS credentials (AWS CLI expects uppercase)
+        env = dict(os.environ)
+        env["AWS_ACCESS_KEY_ID"] = aws_access_key_id
+        env["AWS_SECRET_ACCESS_KEY"] = aws_secret_access_key
+        logger.info(f"Using AWS settings from environment file (bucket: {bucket}, region: {region})")
+
+        try:
+            logger.info(f"Syncing {zip_path.name} to {s3_uri}...")
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
+            logger.info(f"Successfully synced to S3: {s3_uri}")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to sync to S3: {e.stderr}")
+            return False
+        except FileNotFoundError:
+            logger.error("AWS CLI not found. Please install AWS CLI to use S3 sync functionality.")
+            return False
 
     # ------------------------------
     # Environment discovery
@@ -281,113 +330,8 @@ class ModulePackager:
         except Exception:
             pass
 
-        # Static fallback list for older Pythons
-        stdlib_modules = {
-            "os",
-            "sys",
-            "json",
-            "logging",
-            "datetime",
-            "time",
-            "pathlib",
-            "typing",
-            "collections",
-            "itertools",
-            "functools",
-            "re",
-            "math",
-            "random",
-            "uuid",
-            "hashlib",
-            "base64",
-            "urllib",
-            "http",
-            "email",
-            "xml",
-            "html",
-            "csv",
-            "sqlite3",
-            "threading",
-            "multiprocessing",
-            "subprocess",
-            "socket",
-            "ssl",
-            "gzip",
-            "zipfile",
-            "tarfile",
-            "shutil",
-            "tempfile",
-            "glob",
-            "fnmatch",
-            "pickle",
-            "copy",
-            "weakref",
-            "gc",
-            "inspect",
-            "ast",
-            "dis",
-            "traceback",
-            "warnings",
-            "contextlib",
-            "abc",
-            "enum",
-            "dataclasses",
-            "argparse",
-            "configparser",
-            "io",
-            "struct",
-            "array",
-            "heapq",
-            "bisect",
-            "queue",
-            "sched",
-            "calendar",
-            "decimal",
-            "fractions",
-            "statistics",
-            "zoneinfo",
-            "locale",
-            "gettext",
-            "codecs",
-            "unicodedata",
-            "stringprep",
-            "readline",
-            "rlcompleter",
-            "cmd",
-            "shlex",
-            "platform",
-            "errno",
-            "ctypes",
-            "mmap",
-            "winreg",
-            "msvcrt",
-            "winsound",
-            "posix",
-            "pwd",
-            "grp",
-            "crypt",
-            "termios",
-            "tty",
-            "pty",
-            "fcntl",
-            "resource",
-            "nis",
-            "syslog",
-            "signal",
-            "msilib",
-            "distutils",
-            "ensurepip",
-            "venv",
-            "zipapp",
-            "pdb",
-            "profile",
-            "pstats",
-            "timeit",
-            "trace",
-            "cProfile",
-            "faulthandler",
-            "tracemalloc",
-        }
+        # Load stdlib modules from config
+        stdlib_modules = set(self.config.get("stdlib_modules", []))
         # Check if any parent module is in stdlib (fallback)
         for i in range(1, len(module_parts) + 1):
             parent_module = ".".join(module_parts[:i])
@@ -521,6 +465,14 @@ class ModulePackager:
         dep_dists: Set[str] = set()
         tree_kind: Optional[str] = None
 
+        # Add module-specific extras from config
+        config_extras = self.get_module_extras(module_or_dist)
+        if config_extras:
+            logger.info(
+                f"Adding config extras for {module_or_dist}: {', '.join(config_extras)}"
+            )
+            dep_modules.update(config_extras)
+
         # Add extra modules to the dependency set
         if extra_modules:
             logger.info(
@@ -643,6 +595,7 @@ class ModulePackager:
         include_extras: bool = False,
         strategy: str = "auto",
         extra_modules: List[str] = None,
+        env_file_provided: bool = False,
     ):
         """Create a ZIP package containing the module and all (recursively) resolved dependencies."""
         output_dir = Path(output_dir) if output_dir else Path.cwd()
@@ -678,6 +631,13 @@ class ModulePackager:
         logger.info(
             f"Resolved {len(dep_modules)} modules and {len(dep_dists)} distributions."
         )
+
+        # Sync to S3 if environment file provided
+        if env_file_provided:
+            sync_success = self.sync_to_s3(zip_path)
+            if not sync_success:
+                logger.warning(f"Package created locally but failed to sync to S3")
+
         return zip_path
 
     # ------------------------------
@@ -759,8 +719,13 @@ def main():
         "module", help="Module or distribution name to package/inspect (e.g., requests)"
     )
     parser.add_argument(
-        "venv_path",
-        help="Virtual environment path (e.g., /var/python3.11/silvaengine/env)",
+        "--venv-path",
+        help="Virtual environment path (e.g., /var/python3.11/silvaengine/env). If not provided, will use path from config file.",
+    )
+    parser.add_argument(
+        "--config",
+        default="mcp_packages.json",
+        help="Path to configuration JSON file (default: mcp_packages.json)",
     )
     parser.add_argument(
         "--output-dir", default=".", help="Output directory for ZIP file"
@@ -789,6 +754,11 @@ def main():
         metavar="DELAY",
         help="Enable slow character-by-character printing with specified delay in seconds (e.g., 0.03)",
     )
+    parser.add_argument(
+        "--env-file",
+        default=".env",
+        help="Path to environment file containing AWS settings (default: .env)",
+    )
 
     args = parser.parse_args()
 
@@ -810,7 +780,7 @@ def main():
     else:
         print_func = print
 
-    packager = ModulePackager(args.venv_path)
+    packager = ModulePackager(getattr(args, 'venv_path', None), args.config, getattr(args, 'env_file', '.env'))
 
     if args.inspect:
         mods, dists, tree, kind = packager.inspect_dependencies(
@@ -887,12 +857,14 @@ def main():
         return
 
     # Otherwise, produce zip
+    env_file_provided = hasattr(args, 'env_file') and args.env_file != '.env'
     zip_path = packager.create_package(
         args.module,
         Path(args.output_dir),
         include_extras=False,
         strategy=args.strategy,
         extra_modules=include_extras_list,
+        env_file_provided=env_file_provided,
     )
 
     if zip_path:
