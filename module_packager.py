@@ -666,21 +666,37 @@ class ModulePackager:
     def _render_tree(adjacency: Dict[str, Set[str]], roots: Iterable[str]) -> str:
         """Render a clean ASCII tree from an adjacency list and a list of roots."""
         lines: List[str] = []
+        visited: Set[str] = set()
 
-        def walk(node: str, prefix: str = "", is_last: bool = True):
+        def walk(node: str, prefix: str = "", is_last: bool = True, depth: int = 0):
+            # Prevent infinite loops in circular dependencies
+            if node in visited and depth > 0:
+                connector = "└─ " if is_last else "├─ "
+                lines.append(prefix + connector + node + " (circular)")
+                return
+
+            if depth > 0:
+                visited.add(node)
+
             connector = "└─ " if is_last else "├─ "
             if prefix == "":
-                lines.append(node)
+                lines.append(node + "\n")
             else:
-                lines.append(prefix + connector + node)
-            children = sorted(adjacency.get(node, []))
+                lines.append(prefix + connector + node + "\n")
+
+            children = sorted(adjacency.get(node, set()))
             for i, ch in enumerate(children):
                 last = i == len(children) - 1
                 new_prefix = prefix + ("   " if is_last else "│  ")
-                walk(ch, new_prefix, last)
+                walk(ch, new_prefix, last, depth + 1)
 
-        for r in sorted(set(roots)):
-            walk(r, "", True)
+        roots_list = sorted(set(roots))
+        for i, r in enumerate(roots_list):
+            visited.clear()  # Clear visited for each root
+            walk(r, "", i == len(roots_list) - 1)
+            if i < len(roots_list) - 1:
+                lines.append("\n")  # Add spacing between multiple root trees
+
         return "".join(lines)
 
 
@@ -728,16 +744,28 @@ def main():
         mods, dists, tree, kind = packager.inspect_dependencies(
             args.module, strategy=args.strategy, include_extras=args.include_extras
         )
-        print("== Strategy Used ==", kind or "none")
-        print("== Distributions ==")
-        for d in sorted(dists):
-            print(f" - {d}")
-        print("== Top-level modules ==")
-        for m in sorted(mods):
-            print(f" - {m}")
+        print("=" * 60)
+        print(f"DEPENDENCY ANALYSIS FOR: {args.module}")
+        print("=" * 60)
+        print(f"Strategy Used: {kind or 'none'}")
+        print(f"Total Distributions: {len(dists)}")
+        print(f"Total Top-level Modules: {len(mods)}")
+        print()
+
+        if dists:
+            print("📦 DISTRIBUTIONS:")
+            for d in sorted(dists):
+                print(f"  • {d}")
+            print()
+
+        if mods:
+            print("🐍 TOP-LEVEL MODULES:")
+            for m in sorted(mods):
+                print(f"  • {m}")
+            print()
 
         # Tree view
-        print("== Dependency Tree ==")
+        print("🌳 DEPENDENCY TREE:")
         if kind == "metadata":
             # Build incoming count to find roots in the dist graph
             incoming: Dict[str, int] = defaultdict(int)
@@ -752,9 +780,27 @@ def main():
             ascii_tree = ModulePackager._render_tree(tree, roots)
             print(ascii_tree)
         elif kind == "imports":
-            roots = [args.module.split(".")[0]]
-            ascii_tree = ModulePackager._render_tree(tree, roots)
-            print(ascii_tree)
+            # For imports strategy, find actual roots (modules with no incoming dependencies)
+            incoming: Dict[str, int] = defaultdict(int)
+            for parent, children in tree.items():
+                for child in children:
+                    incoming[child] += 1
+
+            # Find all modules that are not imported by others (potential roots)
+            all_modules = set(tree.keys()) | set().union(*tree.values()) if tree else set()
+            actual_roots = [m for m in all_modules if incoming.get(m, 0) == 0]
+
+            # If no clear roots found or if the target module exists, include it
+            target_root = args.module.split(".")[0]
+            if not actual_roots or target_root in all_modules:
+                if target_root not in actual_roots:
+                    actual_roots = [target_root] + actual_roots
+
+            if actual_roots and tree:
+                ascii_tree = ModulePackager._render_tree(tree, actual_roots)
+                print(ascii_tree)
+            else:
+                print(f"No import dependencies found for '{args.module}'")
         else:
             print("(no tree available)")
         return
