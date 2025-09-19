@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 def slow_print(text: str, delay: float = 0.03):
     """Print text character by character with a delay."""
     for char in text:
-        print(char, end='', flush=True)
+        print(char, end="", flush=True)
         time.sleep(delay)
     print()  # Add newline at the end
 
@@ -74,73 +74,31 @@ class ModulePackager:
 
         self.excluded_modules = {
             # SilvaEngine Layer
-            "boto3",
-            "certifi",
-            "lxml",
-            "requests",
-            "graphene",
-            "pynamodb",
-            "python-dotenv",
-            "docutils",
-            "wheel",
-            "typing-extensions",
-            "tenacity",
-            "pymysql",
-            "pyathena",
-            "SQLAlchemy",
-            "graphene_sqlalchemy",
-            "graphene_sqlalchemy_filter",
-            "zipp",
-            "promise",
-            "pendulum",
-            "cerberus",
-            "deepdiff",
-            "pytz",
-            "openpyxl",
-            "python-jose",
-            "chardet",
-            "logzero",
-            "phpserialize",
-            "requests_oauthlib",
-            "requests-toolbelt",
-            "appdirs",
-            "zeep",
-            "oauthlib",
-            "reportlab",
-            "jinja2",
-            "markupsafe",
-            "pyhumps",
-            "warlock",
-            "xmltodict",
-            "dicttoxml",
-            "pandas",
-            "jsonpickle",
-            "elasticsearch",
-            "hubspot-api-client",
-            "sentry-sdk",
-            "pydocparser",
-            "pillow",
-            "json2html",
-            "levenshtein",
-            "rapidfuzz",
-            "click",
-            "sshtunnel",
-            "pypng",
-            "qrcode",
-            "cached-property",
-            "pyyaml",
-            "openai",
-            "redis",
-            "ujson",
-            "pyarrow",
-            "silvaengine_utility",
-            "event_triggers",
             "silvaengine_base",
-            "silvaengine_resource",
             "silvaengine_authorizer",
+            "silvaengine_utility",
             "silvaengine_dynamodb_base",
-            "event_recorder",
-            "mutex_engine",
+            "pynamodb",
+            "graphene",
+            "graphql",
+            "graphql_relay",
+            "jsonpickle",
+            "pendulum",
+            "certifi",
+            "yaml",
+            "rx",
+            "promise",
+            "sqlalchemy",
+            "aniso8601",
+            "deepdiff",
+            "ordered_set",
+            "tenacity",
+            "requests",
+            "requests_oauthlib",
+            "requests_toolbelt",
+            "jose",
+            "ecdsa",
+            "dotenv"
             # MCP Layer
             "ai_mcp_daemon_engine",
             "idna",
@@ -152,7 +110,6 @@ class ModulePackager:
             "pydantic",
             "pydantic_core",
             "mcp",
-            "mcp-1.13.1.dist-info",
             "passlib",
             "httpx_sse",
             "pydantic_settings",
@@ -305,7 +262,9 @@ class ModulePackager:
 
             # Check against excluded modules
             if parent_module in self.excluded_modules:
-                logger.debug(f"Skipping {module_name}: parent {parent_module} is excluded")
+                logger.debug(
+                    f"Skipping {module_name}: parent {parent_module} is excluded"
+                )
                 return
 
         # Prefer Python's own stdlib listing when available (3.10+)
@@ -315,7 +274,9 @@ class ModulePackager:
             for i in range(1, len(module_parts) + 1):
                 parent_module = ".".join(module_parts[:i])
                 if parent_module in stdlib_names:
-                    logger.debug(f"Skipping {module_name}: parent {parent_module} is stdlib")
+                    logger.debug(
+                        f"Skipping {module_name}: parent {parent_module} is stdlib"
+                    )
                     return
         except Exception:
             pass
@@ -431,7 +392,9 @@ class ModulePackager:
         for i in range(1, len(module_parts) + 1):
             parent_module = ".".join(module_parts[:i])
             if parent_module in stdlib_modules:
-                logger.debug(f"Skipping {module_name}: parent {parent_module} is stdlib (fallback)")
+                logger.debug(
+                    f"Skipping {module_name}: parent {parent_module} is stdlib (fallback)"
+                )
                 return
 
         parts = module_name.split(".")
@@ -541,7 +504,11 @@ class ModulePackager:
         return dep_dists, dep_modules, tree
 
     def inspect_dependencies(
-        self, module_or_dist: str, strategy: str = "auto", include_extras: bool = False, extra_modules: List[str] = None
+        self,
+        module_or_dist: str,
+        strategy: str = "auto",
+        include_extras: bool = False,
+        extra_modules: List[str] = None,
     ):
         """
         Compute recursive dependencies.
@@ -556,7 +523,9 @@ class ModulePackager:
 
         # Add extra modules to the dependency set
         if extra_modules:
-            logger.info(f"Adding extra modules to dependencies: {', '.join(extra_modules)}")
+            logger.info(
+                f"Adding extra modules to dependencies: {', '.join(extra_modules)}"
+            )
             dep_modules.update(extra_modules)
 
         if strategy in ("metadata", "auto"):
@@ -607,7 +576,9 @@ class ModulePackager:
                 parent_module = ".".join(module_parts[:i])
                 if parent_module in self.excluded_modules:
                     is_excluded = True
-                    logger.info(f"Skipping excluded dependency: {dep} (parent {parent_module} is excluded)")
+                    logger.info(
+                        f"Skipping excluded dependency: {dep} (parent {parent_module} is excluded)"
+                    )
                     break
 
             if is_excluded:
@@ -679,7 +650,10 @@ class ModulePackager:
 
         # Resolve the recursive dependency set
         dep_modules, dep_dists, _tree, _kind = self.inspect_dependencies(
-            module_name, strategy=strategy, include_extras=include_extras, extra_modules=extra_modules
+            module_name,
+            strategy=strategy,
+            include_extras=include_extras,
+            extra_modules=extra_modules,
         )
 
         if not dep_modules:
@@ -714,7 +688,7 @@ class ModulePackager:
         """Render a clean ASCII tree with proper Unicode box-drawing characters."""
         lines: List[str] = []
         visited_in_path: Set[str] = set()  # Track current path to detect cycles
-        global_visited: Set[str] = set()   # Track all visited to avoid duplicates
+        global_visited: Set[str] = set()  # Track all visited to avoid duplicates
 
         def walk(node: str, prefix: str = "", is_last: bool = True, depth: int = 0):
             # Detect circular dependencies
@@ -746,7 +720,7 @@ class ModulePackager:
                 global_visited.add(node)
 
                 for i, child in enumerate(children):
-                    is_last_child = (i == len(children) - 1)
+                    is_last_child = i == len(children) - 1
 
                     # Build the prefix for the child
                     if depth == 0:
@@ -821,12 +795,18 @@ def main():
     # Parse include-extras as a list of modules
     include_extras_list = []
     if args.include_extras:
-        include_extras_list = [module.strip() for module in args.include_extras.split(",") if module.strip()]
+        include_extras_list = [
+            module.strip()
+            for module in args.include_extras.split(",")
+            if module.strip()
+        ]
 
     # Set up print function based on slow-print option
     if args.slow_print > 0:
+
         def print_func(text: str):
             slow_print(text, args.slow_print)
+
     else:
         print_func = print
 
@@ -834,7 +814,10 @@ def main():
 
     if args.inspect:
         mods, dists, tree, kind = packager.inspect_dependencies(
-            args.module, strategy=args.strategy, include_extras=False, extra_modules=include_extras_list
+            args.module,
+            strategy=args.strategy,
+            include_extras=False,
+            extra_modules=include_extras_list,
         )
         print_func("=" * 60)
         print_func(f"DEPENDENCY ANALYSIS FOR: {args.module}")
@@ -843,7 +826,9 @@ def main():
         print_func(f"Total Distributions: {len(dists)}")
         print_func(f"Total Top-level Modules: {len(mods)}")
         if include_extras_list:
-            print_func(f"Extra Modules Included: {len(include_extras_list)} ({', '.join(include_extras_list)})")
+            print_func(
+                f"Extra Modules Included: {len(include_extras_list)} ({', '.join(include_extras_list)})"
+            )
         print_func("")
 
         if dists:
@@ -881,7 +866,9 @@ def main():
                     incoming[child] += 1
 
             # Find all modules that are not imported by others (potential roots)
-            all_modules = set(tree.keys()) | set().union(*tree.values()) if tree else set()
+            all_modules = (
+                set(tree.keys()) | set().union(*tree.values()) if tree else set()
+            )
             actual_roots = [m for m in all_modules if incoming.get(m, 0) == 0]
 
             # If no clear roots found or if the target module exists, include it
