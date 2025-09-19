@@ -664,38 +664,63 @@ class ModulePackager:
     # ------------------------------
     @staticmethod
     def _render_tree(adjacency: Dict[str, Set[str]], roots: Iterable[str]) -> str:
-        """Render a clean ASCII tree from an adjacency list and a list of roots."""
+        """Render a clean ASCII tree with proper Unicode box-drawing characters."""
         lines: List[str] = []
-        visited: Set[str] = set()
+        visited_in_path: Set[str] = set()  # Track current path to detect cycles
+        global_visited: Set[str] = set()   # Track all visited to avoid duplicates
 
         def walk(node: str, prefix: str = "", is_last: bool = True, depth: int = 0):
-            # Prevent infinite loops in circular dependencies
-            if node in visited and depth > 0:
-                connector = "└─ " if is_last else "├─ "
-                lines.append(prefix + connector + node + " (circular)")
+            # Detect circular dependencies
+            if node in visited_in_path:
+                connector = "└── " if is_last else "├── "
+                lines.append(f"{prefix}{connector}{node} ↻ (circular)\n")
                 return
 
-            if depth > 0:
-                visited.add(node)
+            # Add current node to path
+            visited_in_path.add(node)
 
-            connector = "└─ " if is_last else "├─ "
-            if prefix == "":
-                lines.append(node + "\n")
+            # Choose the right connector and display the node
+            if depth == 0:
+                # Root node
+                lines.append(f"{node}\n")
             else:
-                lines.append(prefix + connector + node + "\n")
+                connector = "└── " if is_last else "├── "
+                # Mark if we've seen this node before (but not in current path)
+                marker = " (already shown)" if node in global_visited else ""
+                lines.append(f"{prefix}{connector}{node}{marker}\n")
 
+            # Get children and sort them
             children = sorted(adjacency.get(node, set()))
-            for i, ch in enumerate(children):
-                last = i == len(children) - 1
-                new_prefix = prefix + ("   " if is_last else "│  ")
-                walk(ch, new_prefix, last, depth + 1)
 
+            # Only show children if we haven't fully processed this node before
+            show_children = node not in global_visited
+            if show_children:
+                # Mark as globally visited before processing children
+                global_visited.add(node)
+
+                for i, child in enumerate(children):
+                    is_last_child = (i == len(children) - 1)
+
+                    # Build the prefix for the child
+                    if depth == 0:
+                        child_prefix = ""
+                    else:
+                        child_prefix = prefix + ("    " if is_last else "│   ")
+
+                    walk(child, child_prefix, is_last_child, depth + 1)
+
+            # Remove from current path when backtracking
+            visited_in_path.discard(node)
+
+        # Process each root
         roots_list = sorted(set(roots))
-        for i, r in enumerate(roots_list):
-            visited.clear()  # Clear visited for each root
-            walk(r, "", i == len(roots_list) - 1)
+        for i, root in enumerate(roots_list):
+            visited_in_path.clear()
+            walk(root, "", True, 0)
+
+            # Add spacing between different root trees
             if i < len(roots_list) - 1:
-                lines.append("\n")  # Add spacing between multiple root trees
+                lines.append("\n")
 
         return "".join(lines)
 
