@@ -22,6 +22,103 @@ class ModulePackager:
         self.dependencies = set()
         self.processed = set()
         self.external_deps = set()
+        self.excluded_modules = {
+            # SilvaEngine Layer
+            "boto3",
+            "certifi",
+            "lxml",
+            "requests",
+            "graphene",
+            "pynamodb",
+            "python-dotenv",
+            "docutils",
+            "wheel",
+            "typing-extensions",
+            "tenacity",
+            "pymysql",
+            "pyathena",
+            "SQLAlchemy",
+            "graphene_sqlalchemy",
+            "graphene_sqlalchemy_filter",
+            "zipp",
+            "promise",
+            "pendulum",
+            "cerberus",
+            "deepdiff",
+            "pytz",
+            "openpyxl",
+            "python-jose",
+            "chardet",
+            "logzero",
+            "phpserialize",
+            "requests_oauthlib",
+            "requests-toolbelt",
+            "appdirs",
+            "zeep",
+            "oauthlib",
+            "reportlab",
+            "jinja2",
+            "markupsafe",
+            "pyhumps",
+            "warlock",
+            "xmltodict",
+            "dicttoxml",
+            "pandas",
+            "jsonpickle",
+            "elasticsearch",
+            "hubspot-api-client",
+            "sentry-sdk",
+            "pydocparser",
+            "pillow",
+            "json2html",
+            "levenshtein",
+            "rapidfuzz",
+            "click",
+            "sshtunnel",
+            "pypng",
+            "qrcode",
+            "cached-property",
+            "pyyaml",
+            "openai",
+            "redis",
+            "ujson",
+            "pyarrow",
+            "silvaengine_utility",
+            "event_triggers",
+            "silvaengine_base",
+            "silvaengine_resource",
+            "silvaengine_authorizer",
+            "silvaengine_dynamodb_base",
+            "event_recorder",
+            "mutex_engine",
+            # MCP Layer
+            "ai_mcp_daemon_engine",
+            "idna",
+            "httpx",
+            "annotated_types",
+            "sniffio",
+            "anyio",
+            "typing_inspection",
+            "pydantic",
+            "pydantic_core",
+            "mcp",
+            "mcp-1.13.1.dist-info",
+            "passlib",
+            "httpx_sse",
+            "pydantic_settings",
+            "starlette",
+            "sse_starlette",
+            "humps",
+            "shopify_connector",
+            "shopify",
+            "pyactiveresource",
+            "jsonschema",
+            "jsonschema_specifications",
+            "attr",
+            "attrs",
+            "referencing",
+            "rpds",
+        }
 
     def _find_site_packages(self):
         """Find site-packages directory in venv"""
@@ -47,15 +144,26 @@ class ModulePackager:
 
         self.processed.add(module_name)
 
+        # Check if module is in excluded list - still discover but mark for exclusion
+        base_module = module_name.split(".")[0]
+        is_excluded = base_module in self.excluded_modules
+        if is_excluded:
+            logger.info(
+                f"Found excluded module (will skip in packaging): {module_name}"
+            )
+        else:
+            logger.info(f"Processing dependency: {module_name}")
+
         try:
             # Look for module in site_packages
             module_path = self.site_packages / module_name
 
             if module_path.exists():
-                self.external_deps.add(module_name)
-                logger.info(f"Added dependency: {module_name}")
+                if not is_excluded:
+                    self.external_deps.add(module_name)
+                    logger.info(f"Added dependency: {module_name}")
 
-                # Parse all Python files in the module
+                # Parse all Python files in the module to find more dependencies
                 if module_path.is_dir():
                     # Parse all Python files in the package
                     for py_file in module_path.rglob("*.py"):
@@ -76,10 +184,11 @@ class ModulePackager:
                         module_file = Path(spec.origin)
                         # Only process if it's in site_packages
                         if str(self.site_packages) in str(module_file):
-                            self.external_deps.add(module_name)
-                            logger.info(
-                                f"Added dependency via importlib: {module_name}"
-                            )
+                            if not is_excluded:
+                                self.external_deps.add(module_name)
+                                logger.info(
+                                    f"Added dependency via importlib: {module_name}"
+                                )
                             logger.debug(
                                 f"Parsing imports from {module_file} (via importlib)"
                             )
@@ -265,10 +374,9 @@ class ModulePackager:
             ext_path = self.site_packages / partial_name
 
             if ext_path.exists():
-                if partial_name not in self.external_deps:
-                    self.external_deps.add(partial_name)
-                    logger.info(f"Found dependency: {partial_name}")
-                    self._find_external_dependencies(partial_name)
+                if partial_name not in self.processed:
+                    # Use the main recursive method for full dependency discovery
+                    self.find_module_dependencies(partial_name)
                 return
 
         # Check for common package name variations
@@ -282,10 +390,9 @@ class ModulePackager:
         for variation in variations:
             # Check in site-packages
             ext_path = self.site_packages / variation
-            if ext_path.exists() and variation not in self.external_deps:
-                self.external_deps.add(variation)
-                logger.info(f"Found dependency variation: {variation}")
-                self._find_external_dependencies(variation)
+            if ext_path.exists() and variation not in self.processed:
+                # Use the main recursive method for full dependency discovery
+                self.find_module_dependencies(variation)
                 return
 
     def _find_external_dependencies(self, module_name):
@@ -314,11 +421,9 @@ class ModulePackager:
                     if "-" not in related.name or related.name.replace(
                         "-", "_"
                     ) == module_name.replace("-", "_"):
-                        if related.name not in self.external_deps:
-                            self.external_deps.add(related.name)
-                            logger.info(
-                                f"Found related external dependency: {related.name}"
-                            )
+                        if related.name not in self.processed:
+                            # Use the main recursive method for full dependency discovery
+                            self.find_module_dependencies(related.name)
 
         except Exception as e:
             logger.warning(
@@ -359,6 +464,12 @@ class ModulePackager:
 
         # Collect all dependencies from site-packages
         for dep in self.external_deps:
+            # Skip excluded modules
+            base_dep = dep.split(".")[0]
+            if base_dep in self.excluded_modules:
+                logger.info(f"Skipping excluded dependency: {dep}")
+                continue
+
             logger.info(f"Collecting files for dependency: {dep}")
             ext_path = self.site_packages / dep
             if ext_path.exists():
@@ -403,6 +514,17 @@ class ModulePackager:
                     info_dir.name.endswith(".dist-info")
                     or info_dir.name.endswith(".egg-info")
                 ):
+                    # Check if this metadata belongs to an excluded module
+                    metadata_module = info_dir.name.split("-")[0].replace("_", "-")
+                    if (
+                        metadata_module in self.excluded_modules
+                        or metadata_module.replace("-", "_") in self.excluded_modules
+                    ):
+                        logger.info(
+                            f"Skipping metadata for excluded module: {metadata_module}"
+                        )
+                        continue
+
                     for file_path in info_dir.rglob("*"):
                         if file_path.is_file():
                             # Place metadata files directly at root level
