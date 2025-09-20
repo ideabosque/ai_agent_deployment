@@ -62,7 +62,9 @@
     "attr",
     "attrs",
     "referencing",
-    "rpds"
+    "rpds",
+    "boto3",
+    "botocore"
   ],
   "stdlib_modules": [
     "os",
