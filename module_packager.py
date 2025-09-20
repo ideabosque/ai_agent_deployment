@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from __future__ import print_function
+
 """
 module_packager_recursive.py
 
@@ -65,7 +68,12 @@ def slow_print(text: str, delay: float = 0.03):
 
 
 class ModulePackager:
-    def __init__(self, venv_path: Optional[str] = None, config_path: str = "mcp_packages.json", env_file: str = ".env"):
+    def __init__(
+        self,
+        venv_path: Optional[str] = None,
+        config_path: str = "mcp_packages.json",
+        env_file: str = ".env",
+    ):
         # Load configuration from JSON file
         self.config = self._load_config(config_path)
 
@@ -75,7 +83,9 @@ class ModulePackager:
         # Use venv_path from parameter or config file
         venv_path = venv_path or self.config.get("venv_path")
         if not venv_path:
-            raise ValueError("venv_path must be provided either as parameter or in config file")
+            raise ValueError(
+                "venv_path must be provided either as parameter or in config file"
+            )
 
         self.venv_path = Path(venv_path)
         self.site_packages = self._find_site_packages()
@@ -98,7 +108,7 @@ class ModulePackager:
         try:
             config_file = Path(config_path)
             if config_file.exists():
-                with open(config_file, 'r') as f:
+                with open(config_file, "r") as f:
                     return json.load(f)
             else:
                 logger.warning(f"Config file {config_path} not found, using defaults")
@@ -112,21 +122,23 @@ class ModulePackager:
         try:
             env_file = Path(env_path)
             if env_file.exists():
-                with open(env_file, 'r') as f:
+                with open(env_file, "r") as f:
                     for line in f:
                         line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            key, value = line.split('=', 1)
+                        if line and not line.startswith("#") and "=" in line:
+                            key, value = line.split("=", 1)
                             key = key.strip()
                             # Remove inline comments and clean up value
-                            if '#' in value:
-                                value = value.split('#')[0]
+                            if "#" in value:
+                                value = value.split("#")[0]
                             value = value.strip().strip('"').strip("'")
                             if value:  # Only set non-empty values
                                 os.environ[key] = value
                 logger.info(f"Loaded environment variables from {env_path}")
             else:
-                logger.info(f"No .env file found at {env_path}, using existing environment variables")
+                logger.info(
+                    f"No .env file found at {env_path}, using existing environment variables"
+                )
         except Exception as e:
             logger.warning(f"Error loading .env file {env_path}: {e}")
 
@@ -136,8 +148,9 @@ class ModulePackager:
         module_config = modules_config.get(module_name, {})
         return module_config.get("include_extras", [])
 
-
-    def _show_progress_indicator(self, stop_event: threading.Event, file_size_mb: float):
+    def _show_progress_indicator(
+        self, stop_event: threading.Event, file_size_mb: float
+    ):
         """Show a progress indicator while upload is happening."""
         # Wait a moment for the initial log message to complete
         time.sleep(0.5)
@@ -149,7 +162,11 @@ class ModulePackager:
         while not stop_event.is_set():
             elapsed = time.time() - start_time
             char = spinner_chars[spinner_idx % len(spinner_chars)]
-            print(f"\r{char} Uploading {file_size_mb:.1f}MB to S3... ({elapsed:.1f}s)", end="", flush=True)
+            print(
+                f"\r{char} Uploading {file_size_mb:.1f}MB to S3... ({elapsed:.1f}s)",
+                end="",
+                flush=True,
+            )
             spinner_idx += 1
             time.sleep(0.1)
 
@@ -167,7 +184,9 @@ class ModulePackager:
             return False
 
         if not aws_access_key_id or not aws_secret_access_key:
-            logger.error(f"AWS credentials not found. Set aws_access_key_id and aws_secret_access_key in environment file.")
+            logger.error(
+                f"AWS credentials not found. Set aws_access_key_id and aws_secret_access_key in environment file."
+            )
             return False
 
         # Get file size for progress indicator
@@ -187,22 +206,33 @@ class ModulePackager:
         env = dict(os.environ)
         env["AWS_ACCESS_KEY_ID"] = aws_access_key_id
         env["AWS_SECRET_ACCESS_KEY"] = aws_secret_access_key
-        logger.info(f"Using AWS settings from environment file (bucket: {bucket}, region: {region})")
+        logger.info(
+            f"Using AWS settings from environment file (bucket: {bucket}, region: {region})"
+        )
 
         # Start progress indicator
         stop_event = threading.Event()
-        progress_thread = threading.Thread(target=self._show_progress_indicator, args=(stop_event, file_size_mb))
+        progress_thread = threading.Thread(
+            target=self._show_progress_indicator, args=(stop_event, file_size_mb)
+        )
         progress_thread.daemon = True
         progress_thread.start()
 
         try:
-            logger.info(f"Syncing {zip_path.name} ({file_size_mb:.1f}MB) to {s3_uri}...")
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
+            logger.info(
+                f"Syncing {zip_path.name} ({file_size_mb:.1f}MB) to {s3_uri}..."
+            )
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, check=True, env=env
+            )
 
             # Stop progress indicator
             stop_event.set()
             progress_thread.join(timeout=1.0)
-            print(f"\r✓ Successfully uploaded {file_size_mb:.1f}MB to S3: {s3_uri}" + " " * 20)
+            print(
+                f"\r✓ Successfully uploaded {file_size_mb:.1f}MB to S3: {s3_uri}"
+                + " " * 20
+            )
             print()  # Add newline for clean output
 
             logger.info(f"Successfully synced to S3: {s3_uri}")
@@ -223,7 +253,9 @@ class ModulePackager:
             print(f"\r✗ AWS CLI not found" + " " * 50)
             print()  # Add newline for clean output
 
-            logger.error("AWS CLI not found. Please install AWS CLI to use S3 sync functionality.")
+            logger.error(
+                "AWS CLI not found. Please install AWS CLI to use S3 sync functionality."
+            )
             return False
 
     # ------------------------------
@@ -830,7 +862,9 @@ def main():
     else:
         print_func = print
 
-    packager = ModulePackager(getattr(args, 'venv_path', None), args.config, getattr(args, 'env_file', '.env'))
+    packager = ModulePackager(
+        getattr(args, "venv_path", None), args.config, getattr(args, "env_file", ".env")
+    )
 
     if args.inspect:
         mods, dists, tree, kind = packager.inspect_dependencies(
@@ -907,7 +941,7 @@ def main():
         return
 
     # Otherwise, produce zip
-    env_file_provided = hasattr(args, 'env_file') and args.env_file != '.env'
+    env_file_provided = hasattr(args, "env_file") and args.env_file != ".env"
     zip_path = packager.create_package(
         args.module,
         Path(args.output_dir),
