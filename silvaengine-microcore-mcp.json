@@ -127,7 +127,7 @@
                   "SLACK_SIGNING_SECRET": "XXXXXXXXXXXXXXX"
                }
             },
-            "MemorySize": 2048
+            "MemorySize": 4096
          },
          "DependsOn": [
             "SilvaEngineMicroCoreExecRole",

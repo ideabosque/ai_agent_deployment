@@ -126,7 +126,7 @@
                   "REGIONNAME": "us-west-2"
                }
             },
-            "MemorySize": 2048
+            "MemorySize": 4096
          },
          "DependsOn": [
             "SilvaEngineMicroCoreExecRole",
