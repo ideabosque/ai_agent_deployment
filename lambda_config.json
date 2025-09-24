@@ -200,7 +200,8 @@
                 "aiohappyeyeballs",
                 "aiosignal",
                 "frozenlist",
-                "attr"
+                "attr",
+                "docstring_parser"
             ],
             "package_files": [
                 "typing_extensions.py"
