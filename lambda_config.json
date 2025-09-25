@@ -266,7 +266,7 @@
                 "pydantic",
                 "pydantic_core",
                 "mcp",
-                "mcp-1.14.1.dist-info",
+                "mcp-1.15.0.dist-info",
                 "passlib",
                 "httpx_sse",
                 "pydantic_settings",
