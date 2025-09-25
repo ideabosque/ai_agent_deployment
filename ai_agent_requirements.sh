@@ -12,8 +12,10 @@ BRANCH="${2:-main}"
 echo "y" | pip uninstall toml && pip install toml
 echo "y" | pip uninstall tiktoken && pip install tiktoken
 echo "y" | pip uninstall openai && pip install openai
+echo "y" | pip uninstall orjson && pip install orjson
 echo "y" | pip uninstall shopify_connector && pip install git+https://github.com/ideabosque/shopify_connector.git@main#egg=shopify_connector
 echo "y" | pip uninstall silvaengine_resource && pip install git+https://github.com/ideabosque/silvaengine_resouces.git@main#egg=silvaengine_resource
+echo "y" | pip uninstall silvaengine_utility && pip install git+https://github.com/ideabosque/silvaengine_utility.git@$BRANCH#egg=silvaengine_utility
 echo "y" | pip uninstall ai_agent_core_engine && pip install git+https://github.com/ideabosque/ai_agent_core_engine.git@$BRANCH#egg=ai_agent_core_engine
 echo "y" | pip uninstall ai_agent_funct_base && pip install git+https://github.com/ideabosque/ai_agent_funct_base.git@$BRANCH#egg=ai_agent_funct_base
 echo "y" | pip uninstall ai_marketing_engine && pip install git+https://github.com/ideabosque/ai_marketing_engine.git@$BRANCH#egg=ai_marketing_engine

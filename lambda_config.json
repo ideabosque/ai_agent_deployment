@@ -201,7 +201,10 @@
                 "aiosignal",
                 "frozenlist",
                 "attr",
-                "docstring_parser"
+                "docstring_parser",
+                "silvaengine_utility",
+                "orjson",
+                "orjson-3.11.3.dist-info"
             ],
             "package_files": [
                 "typing_extensions.py"
@@ -278,7 +281,10 @@
                 "attr",
                 "attrs",
                 "referencing",
-                "rpds"
+                "rpds",
+                "silvaengine_utility",
+                "orjson",
+                "orjson-3.11.3.dist-info"
             ],
             "package_files": [
                 "typing_extensions.py"
