@@ -140,7 +140,9 @@
                 "requests_toolbelt-1.0.0.dist-info",
                 "jose",
                 "ecdsa",
-                "dotenv"
+                "dotenv",
+                "orjson",
+                "orjson-3.11.3.dist-info"
             ],
             "package_files": [
                 "requests_file.py"
@@ -201,10 +203,7 @@
                 "aiosignal",
                 "frozenlist",
                 "attr",
-                "docstring_parser",
-                "silvaengine_utility",
-                "orjson",
-                "orjson-3.11.3.dist-info"
+                "docstring_parser"
             ],
             "package_files": [
                 "typing_extensions.py"
@@ -281,10 +280,7 @@
                 "attr",
                 "attrs",
                 "referencing",
-                "rpds",
-                "silvaengine_utility",
-                "orjson",
-                "orjson-3.11.3.dist-info"
+                "rpds"
             ],
             "package_files": [
                 "typing_extensions.py"
