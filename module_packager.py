@@ -802,6 +802,7 @@ def main():
     )
     parser.add_argument(
         "--venv-path",
+        default="/var/python3.11/silvaengine/env",
         help="Virtual environment path (e.g., /var/python3.11/silvaengine/env). If not provided, will use path from config file.",
     )
     parser.add_argument(
@@ -941,7 +942,7 @@ def main():
         return
 
     # Otherwise, produce zip
-    env_file_provided = hasattr(args, "env_file") and args.env_file != ".env"
+    env_file_provided = hasattr(args, "env_file")  # and args.env_file != ".env"
     zip_path = packager.create_package(
         args.module,
         Path(args.output_dir),
