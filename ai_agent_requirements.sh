@@ -10,7 +10,7 @@ ENV_FILE="$1"
 BRANCH="${2:-main}"
 
 echo "y" | pip uninstall toml && pip install toml
-echo "y" | pip uninstall tiktoken && pip install tiktoken
+echo "y" | pip uninstall tiktoken && pip install tiktoken==0.11.0
 echo "y" | pip uninstall openai && pip install openai
 echo "y" | pip uninstall shopify_connector && pip install git+https://github.com/ideabosque/shopify_connector.git@main#egg=shopify_connector
 echo "y" | pip uninstall silvaengine_resource && pip install git+https://github.com/ideabosque/silvaengine_resouces.git@main#egg=silvaengine_resource
