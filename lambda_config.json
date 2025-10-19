@@ -207,7 +207,13 @@
                 "aiosignal",
                 "frozenlist",
                 "attr",
-                "docstring_parser"
+                "docstring_parser",
+                "h2",
+                "h2-4.3.0.dist-info",
+                "hpack",
+                "hpack-4.1.0.dist-info",
+                "hyperframe",
+                "hyperframe-6.1.0.dist-info"
             ],
             "package_files": [
                 "typing_extensions.py"
