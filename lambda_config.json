@@ -1,310 +1,312 @@
 {
-    "functions": {
-        "silvaengine_area_resource": {
-            "base": "/api",
-            "packages": [],
-            "package_files": [],
-            "files": {}
-        },
-        "silvaengine_area_resource_http": {
-            "base": "/api",
-            "packages": [],
-            "package_files": [],
-            "files": {}
-        },
-        "silvaengine_agenttask": {
-            "base": "/taskqueue/agenttask",
-            "packages": [],
-            "package_files": [],
-            "files": {}
-        },
-        "silvaengine_microcore_ai_agent": {
-            "endpoint_id": "openai",
-            "base": "/beehive/microcore",
-            "packages": [],
-            "package_files": [],
-            "files": {},
-            "hooks": {
-                "packages": [
-                    "ai_agent_core_engine",
-                    "ai_marketing_engine",
-                    "ai_coordination_engine",
-                    "app_core_engine",
-                    "shopify_app_engine"
-                ],
-                "events": {
-                    "deploy": [
-                        {
-                            "package_name": "silvaengine_resource",
-                            "class_name": "Resource",
-                            "function_name": "add_resource"
-                        }
-                    ]
-                }
-            }
-        },
-        "silvaengine_microcore_ai_knowledge": {
-            "endpoint_id": "openai",
-            "base": "/beehive/microcore",
-            "packages": [],
-            "package_files": [],
-            "files": {},
-            "hooks": {
-                "packages": [
-                    "ai_knowledge_engine"
-                ],
-                "events": {
-                    "deploy": [
-                        {
-                            "package_name": "silvaengine_resource",
-                            "class_name": "Resource",
-                            "function_name": "add_resource"
-                        }
-                    ]
-                }
-            }
-        },
-        "silvaengine_microcore_slack": {
-            "endpoint_id": "slack",
-            "area": "bot",
-            "base": "/beehive/microcore",
-            "packages": [],
-            "package_files": [],
-            "files": {},
-            "hooks": {
-                "packages": [
-                    "slack_bot_engine"
-                ],
-                "events": {
-                    "deploy": [
-                        {
-                            "package_name": "silvaengine_resource",
-                            "class_name": "Resource",
-                            "function_name": "add_resource"
-                        }
-                    ]
-                }
-            }
-        },
-        "silvaengine_microcore_mcp": {
-            "endpoint_id": "openai",
-            "area": "core",
-            "base": "/beehive/microcore",
-            "packages": [],
-            "package_files": [],
-            "files": {},
-            "hooks": {
-                "packages": [
-                    "ai_mcp_daemon_engine"
-                ],
-                "events": {
-                    "deploy": [
-                        {
-                            "package_name": "silvaengine_resource",
-                            "class_name": "Resource",
-                            "function_name": "add_resource"
-                        }
-                    ]
-                }
-            }
-        }
+  "functions": {
+    "silvaengine_area_resource": {
+      "base": "/api",
+      "packages": [],
+      "package_files": [],
+      "files": {}
     },
-    "layers": {
-        "silvaengine_layer": {
-            "packages": [
-                "silvaengine_base",
-                "silvaengine_authorizer",
-                "silvaengine_utility",
-                "silvaengine_dynamodb_base",
-                "pynamodb",
-                "graphene",
-                "graphql",
-                "graphql_relay",
-                "jsonpickle",
-                "pendulum",
-                "certifi",
-                "yaml",
-                "rx",
-                "promise",
-                "sqlalchemy",
-                "aniso8601",
-                "deepdiff",
-                "ordered_set",
-                "tenacity",
-                "requests",
-                "requests-2.32.5.dist-info",
-                "requests_file-2.1.0.dist-info",
-                "requests_oauthlib",
-                "requests_oauthlib-1.3.1.dist-info",
-                "requests_toolbelt",
-                "requests_toolbelt-1.0.0.dist-info",
-                "jose",
-                "ecdsa",
-                "dotenv",
-                "orjson",
-                "orjson-3.11.3.dist-info"
-            ],
-            "package_files": [
-                "requests_file.py"
-            ],
-            "files": {}
-        },
-        "silvaengine_microcore_ai_agent_layer": {
-            "packages": [
-                "ai_agent_core_engine",
-                "ai_agent_funct_base",
-                "ai_marketing_engine",
-                "ai_coordination_engine",
-                "ai_agent_handler",
-                "openai_agent_handler",
-                "gemini_agent_handler",
-                "anthropic_agent_handler",
-                "ollama_agent_handler",
-                "app_core_engine",
-                "shopify_app_engine",
-                "openai",
-                "google",
-                "anthropic",
-                "ollama",
-                "ollama-0.6.0.dist-info",
-                "cachetools",
-                "pyasn1_modules",
-                "pyasn1",
-                "rsa",
-                "pyasn1",
-                "websockets",
-                "pydantic",
-                "pydantic_core",
-                "annotated_types",
-                "anyio",
-                "exceptiongroup",
-                "idna",
-                "distro",
-                "h11",
-                "httpx",
-                "httpcore",
-                "sniffio",
-                "tqdm",
-                "jiter",
-                "neo4j",
-                "redis",
-                "tiktoken",
-                "tiktoken-0.11.0.dist-info",
-                "tiktoken_ext",
-                "regex",
-                "toml",
-                "humps",
-                "typing_inspection",
-                "shopify_connector",
-                "shopify",
-                "pyactiveresource",
-                "mcp_http_client",
-                "aiohttp",
-                "multidict",
-                "yarl",
-                "propcache",
-                "aiohappyeyeballs",
-                "aiosignal",
-                "frozenlist",
-                "attr",
-                "docstring_parser",
-                "h2",
-                "h2-4.3.0.dist-info",
-                "hpack",
-                "hpack-4.1.0.dist-info",
-                "hyperframe",
-                "hyperframe-6.1.0.dist-info"
-            ],
-            "package_files": [
-                "typing_extensions.py"
-            ],
-            "files": {}
-        },
-        "silvaengine_microcore_ai_knowledge_layer": {
-            "packages": [
-                "shopify_connector",
-                "shopify",
-                "pyactiveresource",
-                "neo4j_graph_connector",
-                "neo4j",
-                "redis_stack_connector",
-                "redis",
-                "ai_knowledge_engine",
-                "openai",
-                "anyio",
-                "distro",
-                "idna",
-                "pydantic",
-                "pydantic_core",
-                "annotated_types",
-                "httpx",
-                "httpcore",
-                "sniffio",
-                "typing_inspection",
-                "humps",
-                "bs4",
-                "catalogue"
-            ],
-            "package_files": [
-                "typing_extensions.py"
-            ],
-            "files": {}
-        },
-        "silvaengine_microcore_slack_layer": {
-            "packages": [
-                "slack_bot_engine",
-                "slack_bolt",
-                "slack_sdk",
-                "websocket",
-                "websocket_client-1.8.0.dist-info",
-                "websockets",
-                "websockets-15.0.1.dist-info"
-            ],
-            "package_files": [],
-            "files": {}
-        },
-        "silvaengine_microcore_mcp_layer": {
-            "packages": [
-                "ai_mcp_daemon_engine",
-                "idna",
-                "httpx",
-                "annotated_types",
-                "sniffio",
-                "anyio",
-                "typing_inspection",
-                "pydantic",
-                "pydantic_core",
-                "mcp",
-                "mcp-1.17.0.dist-info",
-                "passlib",
-                "httpx_sse",
-                "pydantic_settings",
-                "starlette",
-                "sse_starlette",
-                "humps",
-                "shopify_connector",
-                "shopify",
-                "pyactiveresource",
-                "jsonschema",
-                "jsonschema_specifications",
-                "attr",
-                "attrs",
-                "referencing",
-                "rpds",
-                "h11",
-                "httpx",
-                "httpcore",
-                "h2",
-                "h2-4.3.0.dist-info",
-                "hpack",
-                "hpack-4.1.0.dist-info",
-                "hyperframe",
-                "hyperframe-6.1.0.dist-info"
-            ],
-            "package_files": [
-                "typing_extensions.py"
-            ],
-            "files": {}
+    "silvaengine_area_resource_http": {
+      "base": "/api",
+      "packages": [],
+      "package_files": [],
+      "files": {}
+    },
+    "silvaengine_agenttask": {
+      "base": "/taskqueue/agenttask",
+      "packages": [],
+      "package_files": [],
+      "files": {}
+    },
+    "silvaengine_microcore_ai_agent": {
+      "endpoint_id": "openai",
+      "base": "/beehive/microcore",
+      "packages": [],
+      "package_files": [],
+      "files": {},
+      "hooks": {
+        "packages": [
+          "ai_agent_core_engine",
+          "ai_marketing_engine",
+          "ai_coordination_engine",
+          "app_core_engine",
+          "shopify_app_engine",
+          "openai_action_engine"
+        ],
+        "events": {
+          "deploy": [
+            {
+              "package_name": "silvaengine_resource",
+              "class_name": "Resource",
+              "function_name": "add_resource"
+            }
+          ]
         }
+      }
+    },
+    "silvaengine_microcore_ai_knowledge": {
+      "endpoint_id": "openai",
+      "base": "/beehive/microcore",
+      "packages": [],
+      "package_files": [],
+      "files": {},
+      "hooks": {
+        "packages": [
+          "ai_knowledge_engine"
+        ],
+        "events": {
+          "deploy": [
+            {
+              "package_name": "silvaengine_resource",
+              "class_name": "Resource",
+              "function_name": "add_resource"
+            }
+          ]
+        }
+      }
+    },
+    "silvaengine_microcore_slack": {
+      "endpoint_id": "slack",
+      "area": "bot",
+      "base": "/beehive/microcore",
+      "packages": [],
+      "package_files": [],
+      "files": {},
+      "hooks": {
+        "packages": [
+          "slack_bot_engine"
+        ],
+        "events": {
+          "deploy": [
+            {
+              "package_name": "silvaengine_resource",
+              "class_name": "Resource",
+              "function_name": "add_resource"
+            }
+          ]
+        }
+      }
+    },
+    "silvaengine_microcore_mcp": {
+      "endpoint_id": "openai",
+      "area": "core",
+      "base": "/beehive/microcore",
+      "packages": [],
+      "package_files": [],
+      "files": {},
+      "hooks": {
+        "packages": [
+          "ai_mcp_daemon_engine"
+        ],
+        "events": {
+          "deploy": [
+            {
+              "package_name": "silvaengine_resource",
+              "class_name": "Resource",
+              "function_name": "add_resource"
+            }
+          ]
+        }
+      }
     }
+  },
+  "layers": {
+    "silvaengine_layer": {
+      "packages": [
+        "silvaengine_base",
+        "silvaengine_authorizer",
+        "silvaengine_utility",
+        "silvaengine_dynamodb_base",
+        "pynamodb",
+        "graphene",
+        "graphql",
+        "graphql_relay",
+        "jsonpickle",
+        "pendulum",
+        "certifi",
+        "yaml",
+        "rx",
+        "promise",
+        "sqlalchemy",
+        "aniso8601",
+        "deepdiff",
+        "ordered_set",
+        "tenacity",
+        "requests",
+        "requests-2.32.5.dist-info",
+        "requests_file-2.1.0.dist-info",
+        "requests_oauthlib",
+        "requests_oauthlib-1.3.1.dist-info",
+        "requests_toolbelt",
+        "requests_toolbelt-1.0.0.dist-info",
+        "jose",
+        "ecdsa",
+        "dotenv",
+        "orjson",
+        "orjson-3.11.3.dist-info"
+      ],
+      "package_files": [
+        "requests_file.py"
+      ],
+      "files": {}
+    },
+    "silvaengine_microcore_ai_agent_layer": {
+      "packages": [
+        "ai_agent_core_engine",
+        "ai_agent_funct_base",
+        "ai_marketing_engine",
+        "ai_coordination_engine",
+        "ai_agent_handler",
+        "openai_agent_handler",
+        "gemini_agent_handler",
+        "anthropic_agent_handler",
+        "ollama_agent_handler",
+        "app_core_engine",
+        "shopify_app_engine",
+        "openai_action_engine",
+        "openai",
+        "google",
+        "anthropic",
+        "ollama",
+        "ollama-0.6.0.dist-info",
+        "cachetools",
+        "pyasn1_modules",
+        "pyasn1",
+        "rsa",
+        "pyasn1",
+        "websockets",
+        "pydantic",
+        "pydantic_core",
+        "annotated_types",
+        "anyio",
+        "exceptiongroup",
+        "idna",
+        "distro",
+        "h11",
+        "httpx",
+        "httpcore",
+        "sniffio",
+        "tqdm",
+        "jiter",
+        "neo4j",
+        "redis",
+        "tiktoken",
+        "tiktoken-0.11.0.dist-info",
+        "tiktoken_ext",
+        "regex",
+        "toml",
+        "humps",
+        "typing_inspection",
+        "shopify_connector",
+        "shopify",
+        "pyactiveresource",
+        "mcp_http_client",
+        "aiohttp",
+        "multidict",
+        "yarl",
+        "propcache",
+        "aiohappyeyeballs",
+        "aiosignal",
+        "frozenlist",
+        "attr",
+        "docstring_parser",
+        "h2",
+        "h2-4.3.0.dist-info",
+        "hpack",
+        "hpack-4.1.0.dist-info",
+        "hyperframe",
+        "hyperframe-6.1.0.dist-info"
+      ],
+      "package_files": [
+        "typing_extensions.py"
+      ],
+      "files": {}
+    },
+    "silvaengine_microcore_ai_knowledge_layer": {
+      "packages": [
+        "shopify_connector",
+        "shopify",
+        "pyactiveresource",
+        "neo4j_graph_connector",
+        "neo4j",
+        "redis_stack_connector",
+        "redis",
+        "ai_knowledge_engine",
+        "openai",
+        "anyio",
+        "distro",
+        "idna",
+        "pydantic",
+        "pydantic_core",
+        "annotated_types",
+        "httpx",
+        "httpcore",
+        "sniffio",
+        "typing_inspection",
+        "humps",
+        "bs4",
+        "catalogue"
+      ],
+      "package_files": [
+        "typing_extensions.py"
+      ],
+      "files": {}
+    },
+    "silvaengine_microcore_slack_layer": {
+      "packages": [
+        "slack_bot_engine",
+        "slack_bolt",
+        "slack_sdk",
+        "websocket",
+        "websocket_client-1.8.0.dist-info",
+        "websockets",
+        "websockets-15.0.1.dist-info"
+      ],
+      "package_files": [],
+      "files": {}
+    },
+    "silvaengine_microcore_mcp_layer": {
+      "packages": [
+        "ai_mcp_daemon_engine",
+        "idna",
+        "httpx",
+        "annotated_types",
+        "sniffio",
+        "anyio",
+        "typing_inspection",
+        "pydantic",
+        "pydantic_core",
+        "mcp",
+        "mcp-1.17.0.dist-info",
+        "passlib",
+        "httpx_sse",
+        "pydantic_settings",
+        "starlette",
+        "sse_starlette",
+        "humps",
+        "shopify_connector",
+        "shopify",
+        "pyactiveresource",
+        "jsonschema",
+        "jsonschema_specifications",
+        "attr",
+        "attrs",
+        "referencing",
+        "rpds",
+        "h11",
+        "httpx",
+        "httpcore",
+        "h2",
+        "h2-4.3.0.dist-info",
+        "hpack",
+        "hpack-4.1.0.dist-info",
+        "hyperframe",
+        "hyperframe-6.1.0.dist-info"
+      ],
+      "package_files": [
+        "typing_extensions.py"
+      ],
+      "files": {}
+    }
+  }
 }
