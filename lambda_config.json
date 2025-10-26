@@ -31,7 +31,7 @@
           "ai_coordination_engine",
           "app_core_engine",
           "shopify_app_engine",
-          "openai_action_engine"
+          "mcp_proxy_engine"
         ],
         "events": {
           "deploy": [
@@ -163,7 +163,7 @@
         "ollama_agent_handler",
         "app_core_engine",
         "shopify_app_engine",
-        "openai_action_engine",
+        "mcp_proxy_engine",
         "openai",
         "google",
         "anthropic",
