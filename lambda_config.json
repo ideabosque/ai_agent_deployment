@@ -161,6 +161,7 @@
         "gemini_agent_handler",
         "anthropic_agent_handler",
         "ollama_agent_handler",
+        "travrse_agent_handler",
         "app_core_engine",
         "shopify_app_engine",
         "mcp_proxy_engine",
