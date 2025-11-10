@@ -27,11 +27,12 @@
       "hooks": {
         "packages": [
           "ai_agent_core_engine",
-          "ai_marketing_engine",
           "ai_coordination_engine",
           "app_core_engine",
           "shopify_app_engine",
-          "mcp_proxy_engine"
+          "mcp_proxy_engine",
+          "ai_marketing_engine",
+          "ai_rfq_engine"
         ],
         "events": {
           "deploy": [
@@ -154,7 +155,6 @@
       "packages": [
         "ai_agent_core_engine",
         "ai_agent_funct_base",
-        "ai_marketing_engine",
         "ai_coordination_engine",
         "ai_agent_handler",
         "openai_agent_handler",
@@ -162,6 +162,8 @@
         "anthropic_agent_handler",
         "ollama_agent_handler",
         "travrse_agent_handler",
+        "ai_marketing_engine",
+        "ai_rfq_engine",
         "app_core_engine",
         "shopify_app_engine",
         "mcp_proxy_engine",
