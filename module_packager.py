@@ -264,6 +264,7 @@ class ModulePackager:
     def _find_site_packages(self) -> Path:
         """Find site-packages directory in venv"""
         possible_paths = [
+            self.venv_path / "lib" / "python3.12" / "site-packages",
             self.venv_path / "lib" / "python3.11" / "site-packages",
             self.venv_path / "lib" / "python3.10" / "site-packages",
             self.venv_path / "lib" / "python3.9" / "site-packages",
@@ -802,8 +803,8 @@ def main():
     )
     parser.add_argument(
         "--venv-path",
-        default="/var/python3.11/silvaengine/env",
-        help="Virtual environment path (e.g., /var/python3.11/silvaengine/env). If not provided, will use path from config file.",
+        default="/var/python3.12/silvaengine/env",
+        help="Virtual environment path (e.g., /var/python3.12/silvaengine/env). If not provided, will use path from config file.",
     )
     parser.add_argument(
         "--config",
