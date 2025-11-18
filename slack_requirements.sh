@@ -14,4 +14,4 @@ echo "y" | pip uninstall websocket-client && pip install websocket-client
 echo "y" | pip uninstall silvaengine_resource && pip install git+https://github.com/ideabosque/silvaengine_resouces.git@main#egg=silvaengine_resource
 echo "y" | pip uninstall slack_bot_engine && pip install git+ssh://git@github.com/ideabosque/slack_bot_engine.git@$BRANCH#egg=slack_bot_engine
 
-python3.11 cloudformation_stack.py "$ENV_FILE" silvaengine-microcore-slack
+python3.12 cloudformation_stack.py "$ENV_FILE" silvaengine-microcore-slack

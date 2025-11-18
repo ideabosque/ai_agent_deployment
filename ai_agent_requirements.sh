@@ -30,4 +30,4 @@ echo "y" | pip uninstall app_core_engine && pip install git+https://github.com/i
 echo "y" | pip uninstall shopify_app_engine && pip install git+https://github.com/ideabosque/shopify_app_engine.git@$BRANCH#egg=shopify_app_engine
 echo "y" | pip uninstall mcp_proxy_engine && pip install git+https://github.com/ideabosque/mcp_proxy_engine.git@$BRANCH#egg=mcp_proxy_engine
 
-python3.11 cloudformation_stack.py "$ENV_FILE" silvaengine-microcore-ai-agent
+python3.12 cloudformation_stack.py "$ENV_FILE" silvaengine-microcore-ai-agent

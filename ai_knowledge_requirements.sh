@@ -17,4 +17,4 @@ echo "y" | pip uninstall neo4j_graph_connector && pip install git+https://github
 ### Private modules.
 echo "y" | pip uninstall ai_knowledge_engine && pip install git+ssh://git@github.com/ideabosque/ai_knowledge_engine.git@$BRANCH#egg=ai_knowledge_engine
 
-python3.11 cloudformation_stack.py "$ENV_FILE" silvaengine-microcore-ai-knowledge
+python3.12 cloudformation_stack.py "$ENV_FILE" silvaengine-microcore-ai-knowledge
