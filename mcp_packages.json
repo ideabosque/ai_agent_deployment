@@ -10,6 +10,11 @@
         "scipy.libs",
         "threadpoolctl.py"
       ]
+    },
+    "mcp_rfq_processor": {
+      "include_extras": [
+        "humps"
+      ]
     }
   },
   "excluded_modules": [
