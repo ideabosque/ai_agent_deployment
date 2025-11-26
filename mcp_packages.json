@@ -58,7 +58,6 @@
     "pydantic_settings",
     "starlette",
     "sse_starlette",
-    "humps",
     "shopify_connector",
     "shopify",
     "pyactiveresource",
