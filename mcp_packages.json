@@ -15,6 +15,11 @@
       "include_extras": [
         "humps"
       ]
+    },
+    "mcp_mypay_dispatcher": {
+      "include_extras": [
+        "Cryptodome"
+      ]
     }
   },
   "excluded_modules": [
