@@ -953,12 +953,6 @@ def main():
         env_file_provided=env_file_provided,
     )
 
-    print(args.module)
-    print(args.output_dir)
-    print(args.strategy)
-    print(include_extras_list)
-    print(env_file_provided)
-
     if zip_path:
         print(f"Successfully created package: {zip_path}")
     else:
