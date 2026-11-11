@@ -916,13 +916,13 @@
             }
          }
       },
-      "SilvaEngineWebSocketStreamRoute": {
+      "SilvaEngineWebSocketAskModelRoute": {
          "Type": "AWS::ApiGatewayV2::Route",
          "Properties": {
             "ApiId": {
                "Ref": "SilvaEngineWebSocketApi"
             },
-            "RouteKey": "stream",
+            "RouteKey": "ask_model",
             "AuthorizationType": "NONE",
             "Target": {
                "Fn::Join": [
